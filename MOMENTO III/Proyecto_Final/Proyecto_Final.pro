@@ -11,6 +11,8 @@ SOURCES += \
     mainwindow.cpp
 
 HEADERS += \
+    Excepciones_del_Juego.h \
+    Excepciones_del_Mapa.h \
     mainwindow.h \
     vector2.h
 
