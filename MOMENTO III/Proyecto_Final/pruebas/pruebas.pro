@@ -10,4 +10,6 @@ INCLUDEPATH += ..
 !msvc: QMAKE_CXXFLAGS += -Wall -Wextra
 
 SOURCES += \
+    prueba_Energiacarrera.cpp \
+    prueba_gestorlogico.cpp \
     prueba_vector2.cpp
