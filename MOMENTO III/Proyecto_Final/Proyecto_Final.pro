@@ -7,12 +7,16 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    Energiacarrera.cpp \
+    gestorlogico.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    Energiacarrera.h \
     Excepciones_del_Juego.h \
     Excepciones_del_Mapa.h \
+    gestorlogico.h \
     mainwindow.h \
     vector2.h
 
