@@ -20,15 +20,16 @@ enum class EstadoJuego{
 //GESTOR LOGICO
 
 class gestorlogico{
+public:
 
     //crea el nivel
-    using Fabricanivel = nivel* (*)(int indice, NivelDificultad dificultad);
+    using Fabricanivel = Nivel* (*)(int indice, NivelDificultad dificultad);
 
     //paso de tiempo por fotograma (50ms)el dt al siguiente llega enorme y mario atravesa los bloques
     static constexpr float DT_MAXIMO = 0.05f;
 
     //vidas con las que empieza cada partida
-    static constexpr int VIDAS_INICALES = 3;
+    static constexpr int VIDAS_INICIALES = 3;
 
     //lanza excepciones del juego si la fabrica es nula o no hay niveles
     gestorlogico(Fabricanivel fabrica, int totalniveles);

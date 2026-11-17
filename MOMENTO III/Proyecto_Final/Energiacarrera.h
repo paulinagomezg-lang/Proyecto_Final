@@ -15,7 +15,7 @@ public:
 
     //el jugador mantiene la tecla de correr y mario se mueve
     // multiplicador consumo: 1 normalmente, con poder pesado se pasa, masa pesada/ masa normal para gaste mas rapido
-    void actualizar(float dt, bool corriendo, float multiplicadorConsumo);
+    void actualizar(float dt, bool corriendo, float multiplicadorConsumo = 1.0f);
 
     //1.0: velocidad normal baja hasta el factormin cuando esta agotado
     float factorVelocidad() const{

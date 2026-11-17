@@ -34,6 +34,7 @@ energiacarrera energiacarrera::segunDificultad(NivelDificultad dificultad){
 }
 
 void energiacarrera::actualizar(float dt, bool corriendo, float multiplicadorConsumo){
+    if(!(dt > 0.0f)) return;
     if(corriendo && !agotada_){
         energia_ -= consumo_ *multiplicadorConsumo * dt;
         if(energia_ <= 0.0f){
