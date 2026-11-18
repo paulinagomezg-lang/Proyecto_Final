@@ -8,6 +8,10 @@
 #include <cstdio>
 using namespace std;
 
+// Todo lo de esta prueba queda privado a este archivo, para que los
+// nombres (verificar, fallas, total...) no choquen con las otras pruebas.
+namespace {
+
 static int fallas = 0, total = 0;
 static void verificar(bool c, const char* d)
 {
@@ -16,9 +20,9 @@ static void verificar(bool c, const char* d)
     if (!c) ++fallas;
 }
 
-// ------------------------------------------------------------------
+
 // Nivel falso: se gana o se pierde cuando la prueba lo indica.
-// ------------------------------------------------------------------
+
 static int nivelesVivos = 0;       // cuántos niveles existen ahora
 static int maxNivelesVivos = 0;    // el máximo que llegó a haber
 static int nivelesCreados = 0;
@@ -59,7 +63,7 @@ static NivelFalso* actual(const gestorlogico& g)
     return static_cast<NivelFalso*>(g.nivelactual());
 }
 
-int main()
+void ejecutar(int& correctas, int& totales)
 {
     printf("Construccion\n");
     {
@@ -205,7 +209,14 @@ int main()
     printf("Memoria\n");
     verificar(maxNivelesVivos == 1, "nunca hubo mas de un nivel en memoria a la vez");
     printf("     niveles creados en todas las pruebas: %d\n", nivelesCreados);
+    correctas = total - fallas;
+    totales = total;
+}
 
-    printf("\n%d de %d pruebas correctas\n", total - fallas, total);
-    return fallas == 0 ? 0 : 1;
+} // namespace
+
+// La llama main_pruebas.cpp
+void pruebasGestorLogico(int& correctas, int& totales)
+{
+    ejecutar(correctas, totales);
 }

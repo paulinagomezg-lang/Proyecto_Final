@@ -5,6 +5,10 @@
 #include "vector2.h"
 #include <cstdio>
 
+// Todo lo de esta prueba queda privado a este archivo, para que los
+// nombres (verificar, fallas, total...) no choquen con las otras pruebas.
+namespace {
+
 static int fallas = 0;
 static int total = 0;
 
@@ -20,7 +24,8 @@ static void verificar(bool condicion, const char* descripcion) {
 
 static bool casi(float a, float b, float tol = 1e-4f) { return std::fabs(a - b) <= tol; }
 
-int main() {
+void ejecutar(int& correctas, int& totales)
+{
     const float PI = 3.14159265f;
 
     std::printf("Construccion\n");
@@ -104,7 +109,14 @@ int main() {
         verificar(casi(pos.x, 3.2f, 1e-3f), "x avanza con velocidad constante (2 * 1.6 s = 3.2)");
         verificar(vel.y < 0, "despues de 1.6 s la velocidad vertical ya es hacia abajo");
     }
+    correctas = total - fallas;
+    totales = total;
+}
 
-    std::printf("\n%d de %d pruebas correctas\n", total - fallas, total);
-    return fallas == 0 ? 0 : 1;
+} // namespace
+
+// La llama main_pruebas.cpp
+void pruebasVector2(int& correctas, int& totales)
+{
+    ejecutar(correctas, totales);
 }

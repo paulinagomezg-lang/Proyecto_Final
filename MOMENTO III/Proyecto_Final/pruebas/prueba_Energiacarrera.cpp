@@ -6,6 +6,10 @@
 #include <cmath>
 using namespace std;
 
+// Todo lo de esta prueba queda privado a este archivo, para que los
+// nombres (verificar, fallas, total...) no choquen con las otras pruebas.
+namespace {
+
 static int fallas = 0, total = 0;
 static void verificar(bool c, const char* d)
 {
@@ -23,7 +27,7 @@ static void simular(energiacarrera& e, float segundos, bool corriendo, float mul
     for (int i = 0; i < pasos; ++i) e.actualizar(dt, corriendo, mult);
 }
 
-int main()
+void ejecutar(int& correctas, int& totales)
 {
     printf("Validacion de parametros\n");
     {
@@ -116,7 +120,14 @@ int main()
         while (!ed.agotada()) ed.actualizar(1.0f / 60.0f, true);
         verificar(ef.factorVelocidad() > ed.factorVelocidad(), "agotado en dificil queda mas lento que en facil");
     }
+    correctas = total - fallas;
+    totales = total;
+}
 
-    printf("\n%d de %d pruebas correctas\n", total - fallas, total);
-    return fallas == 0 ? 0 : 1;
+} // namespace
+
+// La llama main_pruebas.cpp
+void pruebasEnergiaCarrera(int& correctas, int& totales)
+{
+    ejecutar(correctas, totales);
 }
