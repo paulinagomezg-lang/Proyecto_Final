@@ -8,6 +8,7 @@ CONFIG += c++17
 
 SOURCES += \
     Energiacarrera.cpp \
+    Nivel.cpp \
     gestorlogico.cpp \
     enemigo.cpp \
     main.cpp \
@@ -18,6 +19,8 @@ HEADERS += \
     Energiacarrera.h \
     Excepciones_del_Juego.h \
     Excepciones_del_Mapa.h \
+    Nivel.h \
+    NivelDificultad.h \
     gestorlogico.h \
     enemigo.h \
     mainwindow.h \
