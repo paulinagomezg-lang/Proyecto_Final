@@ -1,13 +1,22 @@
-# Proyecto de pruebas: programa de consola, sin ventanas.
-# Es independiente del juego y no se agrega a Proyecto_Final.pro.
 QT -= gui
 CONFIG += console c++17
 CONFIG -= app_bundle
 
-# Usa los mismos .h del juego (están en la carpeta de arriba)
 INCLUDEPATH += ..
 
 !msvc: QMAKE_CXXFLAGS += -Wall -Wextra
 
+# Las pruebas (están en esta carpeta)
 SOURCES += \
-    prueba_vector2.cpp
+    main_pruebas.cpp \
+    prueba_vector2.cpp \
+    prueba_Energiacarrera.cpp \
+    prueba_gestorlogico.cpp \
+    prueba_Nivel.cpp
+
+# Las clases del juego (están en la carpeta de arriba)
+SOURCES += \
+    ../Energiacarrera.cpp \
+    ../gestorlogico.cpp \
+    ../Nivel.cpp \
+    ../personaje.cpp
