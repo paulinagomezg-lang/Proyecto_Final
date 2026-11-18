@@ -8,7 +8,6 @@ CONFIG += c++17
 
 SOURCES += \
     enemigo.cpp \
-    main.cpp \
     mainwindow.cpp \
     personaje.cpp
 
