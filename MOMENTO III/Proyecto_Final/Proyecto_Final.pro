@@ -11,7 +11,6 @@ SOURCES += \
     Nivel.cpp \
     gestorlogico.cpp \
     enemigo.cpp \
-    main.cpp \
     mainwindow.cpp \
     personaje.cpp
 
