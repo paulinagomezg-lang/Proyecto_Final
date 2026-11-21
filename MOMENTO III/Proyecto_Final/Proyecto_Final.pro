@@ -10,9 +10,12 @@ SOURCES += \
     Energiacarrera.cpp \
     Nivel.cpp \
     Protagonista.cpp \
+    fabricaniveles.cpp \
     gestorlogico.cpp \
     enemigo.cpp \
     mainwindow.cpp \
+    minionejercitocolombiano.cpp \
+    nivelbloques.cpp \
     personaje.cpp
 
 HEADERS += \
@@ -22,9 +25,15 @@ HEADERS += \
     Nivel.h \
     NivelDificultad.h \
     Protagonista.h \
+    bloquetierra.h \
+    fabricaniveles.h \
+    foso.h \
     gestorlogico.h \
     enemigo.h \
+    itempoder.h \
     mainwindow.h \
+    minionejercitocolombiano.h \
+    nivelbloques.h \
     personaje.h \
     vector2.h
 
