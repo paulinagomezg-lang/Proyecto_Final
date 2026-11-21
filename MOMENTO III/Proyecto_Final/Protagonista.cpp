@@ -47,7 +47,7 @@ Protagonista::Protagonista(vector2 posicion, NivelDificultad dificultad, float m
     Excepciones_de_Parametros_Fisicos::exigirEnRango("factorPesado", factorPesado, 1.0f, 100.0f); //del minimo al maximo
     Excepciones_de_Parametros_Fisicos::exigirPositivo("impulsoSalto", impulsoSalto);
     Excepciones_de_Parametros_Fisicos::exigirPositivo("lentitudPesado", lentitudPesado);
-    Excepciones_de_Parametros_Fisicos::exigirEnRango("letitudPesado", lentitudPesado, 0.0f, 1.0f);//estrictamente mayor que 0.0% y menor o igual a 1.0%
+    Excepciones_de_Parametros_Fisicos::exigirEnRango("lentitudPesado", lentitudPesado, 0.0f, 1.0f);//estrictamente mayor que 0.0% y menor o igual a 1.0%
 
     const TiempoSueno t = tiempoSegunDificultad(dificultad); //funcion auxiliar que calcula y decuelve los tres tiempos
     tiempoParaDormir_ = t.paraDormir; //desempacan de la caja TiempoSueno los datos de t
