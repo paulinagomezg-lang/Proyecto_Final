@@ -10,6 +10,7 @@ public:
     //crea energia con los valores de dificultad elegidos por el menu
     //facil : gasta 18/s, recupera 20/s, se cansa bajo 25, minimo 50%
     //normal : gasta 25/s, recupera 15/s, se cansa bajo 30, minimo 40%
+    //dificil : gasta 35/s, recupera 10/s, se cansa bajo 40, minimo 30%
 
     static energiacarrera segunDificultad(NivelDificultad dificultad);
 

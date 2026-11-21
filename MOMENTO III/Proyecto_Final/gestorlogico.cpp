@@ -3,7 +3,7 @@
 #include "Excepciones_del_Juego.h"
 using namespace std;
 
-gestorlogico::gestorlogico(Fabricanivel fabrica, int totalniveles):fabrica_(fabrica),totalniveles_(totalniveles),indiceactual_(0),nivelactual_(nullptr),estado_(EstadoJuego::MENU),dificultad_(NivelDificultad::NORMAL), vidas_(VIDAS_INICIALES){
+gestorlogico::gestorlogico(Fabricanivel fabrica, int totalniveles):fabrica_(fabrica),totalniveles_(totalniveles),indiceactual_(0),vidas_(VIDAS_INICIALES),nivelactual_(nullptr),estado_(EstadoJuego::MENU),dificultad_(NivelDificultad::NORMAL){
     if(fabrica_ == nullptr)
         throw Excepciones_del_Juego("GestorLogico: La fabrica de niveles no puede ser nula");
     if(totalniveles_ < 1)
