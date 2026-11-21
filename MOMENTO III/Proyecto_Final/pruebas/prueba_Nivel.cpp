@@ -1,5 +1,6 @@
 #include "Nivel.h"
-#include "Personaje.h"
+#include "personaje.h"
+#include "protagonista.h"
 #include "gestorlogico.h"
 #include "Excepciones_del_Juego.h"
 #include <cstdio>
@@ -30,17 +31,15 @@ public:
     void actualizar(float dt) override { ++llamadasActualizar; integrar(dt); }
 };
 
-} // namespace
-
-// Protagonista de prueba (el real se hará después).
-// Va fuera del namespace porque Nivel.h declara 'class Protagonista;' global.
-class Protagonista : public PersonajePrueba
+// Mario de prueba: es el Protagonista real, pero cuenta cuantas veces
+// existe y se actualiza, igual que los PersonajePrueba.
+class ProtagonistaPrueba : public Protagonista
 {
 public:
-    explicit Protagonista(vector2 p) : PersonajePrueba(p) {}
+    explicit ProtagonistaPrueba(vector2 p) : Protagonista(p, NivelDificultad::NORMAL) { ++personajesVivos; }
+    ~ProtagonistaPrueba() override { --personajesVivos; }
+    void actualizar(float dt) override { ++llamadasActualizar; Protagonista::actualizar(dt); }
 };
-
-namespace {
 
 // Nivel de prueba: Mario cae con gravedad; se pierde si baja de y = -10
 // y se gana si llega a x >= 5.
@@ -50,7 +49,7 @@ public:
     explicit NivelPrueba(int minions)
     {
         reservarPersonajes(static_cast<size_t>(minions) + 1);
-        Protagonista* mario = new Protagonista(vector2(0, 0));
+        Protagonista* mario = new ProtagonistaPrueba(vector2(0, 0));
         agregarPersonaje(mario);
         protagonista_ = mario;
         for (int i = 0; i < minions; ++i)
