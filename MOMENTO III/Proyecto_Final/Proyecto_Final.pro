@@ -8,6 +8,7 @@ CONFIG += c++17
 
 SOURCES += \
     Energiacarrera.cpp \
+    MapaLaberinto.cpp \
     Nivel.cpp \
     Protagonista.cpp \
     fabricaniveles.cpp \
@@ -22,6 +23,7 @@ HEADERS += \
     Energiacarrera.h \
     Excepciones_del_Juego.h \
     Excepciones_del_Mapa.h \
+    MapaLaberinto.h \
     Nivel.h \
     NivelDificultad.h \
     Protagonista.h \
