@@ -9,6 +9,7 @@ INCLUDEPATH += ..
 # Las pruebas (están en esta carpeta)
 SOURCES += \
     main_pruebas.cpp \
+    prueba_MapaLaberinto.cpp \
     prueba_Protagonista.cpp \
     prueba_enemigopersonaje.cpp \
     prueba_vector2.cpp \
@@ -23,4 +24,5 @@ SOURCES += \
     ../Energiacarrera.cpp \
     ../gestorlogico.cpp \
     ../Nivel.cpp \
-    ../Protagonista.cpp
+    ../Protagonista.cpp\
+    ../MapaLaberinto.cpp
