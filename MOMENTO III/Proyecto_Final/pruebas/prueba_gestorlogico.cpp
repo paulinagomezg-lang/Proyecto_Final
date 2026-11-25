@@ -105,6 +105,30 @@ void ejecutar(int& correctas, int& totales)
     }
     verificar(nivelesVivos == 0, "al destruir el gestor no queda ningun nivel en memoria");
 
+    printf("Empezar desde el nivel elegido (menu de niveles)\n");
+    {
+        gestorlogico g(fabricaFalsa, 2);
+        g.iniciarEn(1);
+        verificar(g.estado() == EstadoJuego::JUGANDO && g.indicenivelactual() == 1, "iniciarEn(1) empieza en el nivel 2");
+        verificar(g.vidas() == 3 && nivelesVivos == 1, "con 3 vidas y un solo nivel en memoria");
+        actual(g)->gano = true;
+        g.actualizar(0.016f);
+        verificar(g.estado() == EstadoJuego::VICTORIA, "ganar el ultimo nivel elegido da VICTORIA");
+
+        g.volverALMenu();
+        bool lanzo = false;
+        try { g.iniciarEn(5); } catch (const Excepciones_del_Juego&) { lanzo = true; }
+        verificar(lanzo, "un nivel que no existe lanza excepcion");
+        lanzo = false;
+        try { g.iniciarEn(-1); } catch (const Excepciones_del_Juego&) { lanzo = true; }
+        verificar(lanzo, "un indice negativo lanza excepcion");
+        verificar(g.estado() == EstadoJuego::MENU && g.nivelactual() == nullptr, "despues del error sigue en el menu, sin nivel");
+
+        g.iniciarEn(0);
+        verificar(g.indicenivelactual() == 0 && g.estado() == EstadoJuego::JUGANDO, "iniciarEn(0) es lo mismo que iniciar()");
+    }
+    verificar(nivelesVivos == 0, "sin fugas al empezar desde cualquier nivel");
+
     printf("Vidas y reinicio\n");
     {
         gestorlogico g(fabricaFalsa, 2);

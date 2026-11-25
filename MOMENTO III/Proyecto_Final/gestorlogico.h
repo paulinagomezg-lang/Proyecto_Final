@@ -40,6 +40,7 @@ public:
 
     //flujo de la partida
     void iniciar(); //partida nuev, 3 vidas y primer nivel
+    void iniciarEn(int indice); //partida nueva desde el nivel elegido en el menu (lanza si no existe)
     void actualizar(float dt);
     void pausar();
     void reanudar();

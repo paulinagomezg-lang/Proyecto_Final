@@ -35,6 +35,14 @@ int totalNiveles()
     return 1;
 }
 
+const char* nombreNivel(int indice)
+{
+    switch (indice) {
+    case 0:  return "EL LABERINTO"; // cuando esté NivelBloques: 0 = "LOS BLOQUES", 1 = "EL LABERINTO"
+    default: return "?";
+    }
+}
+
 Nivel* crearNivel(int indice, NivelDificultad dificultad)
 {
     switch (indice) {
