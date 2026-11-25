@@ -7,13 +7,16 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    main.cpp\
     BloqueMovil.cpp \
+    DibujoLaberinto.cpp \
     Energiacarrera.cpp \
     MapaLaberinto.cpp \
     MinionGuardia.cpp \
     Nivel.cpp \
     NivelLaberinto.cpp \
     Protagonista.cpp \
+    VistaJuego.cpp \
     fabricaniveles.cpp \
     gestorlogico.cpp \
     enemigo.cpp \
@@ -24,6 +27,7 @@ SOURCES += \
 
 HEADERS += \
     BloqueMovil.h \
+    DibujoLaberinto.h \
     Energiacarrera.h \
     Excepciones_del_Juego.h \
     Excepciones_del_Mapa.h \
@@ -33,6 +37,7 @@ HEADERS += \
     NivelDificultad.h \
     NivelLaberinto.h \
     Protagonista.h \
+    VistaJuego.h \
     bloquetierra.h \
     fabricaniveles.h \
     foso.h \
@@ -53,3 +58,6 @@ FORMS += \
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+RESOURCES += \
+    Recursos.qrc

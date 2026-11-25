@@ -212,17 +212,32 @@ void ejecutar(int& correctas, int& totales)
             try {
                 MapaLaberinto m = MapaLaberinto::desdeArchivo(ruta);
                 cargo = true;
-                verificar(m.ancho() == 21 && m.alto() == 13, "el mapa del nivel mide 21 x 13");
-                verificar(m.guardias().size() == 3 && m.bloquesMoviles().size() == 2,
-                          "tiene 3 Minions guardia y 2 bloques moviles");
+                verificar(m.ancho() == 31 && m.alto() == 21, "el mapa del nivel mide 31 x 21");
+                verificar(m.guardias().size() == 7 && m.bloquesMoviles().size() == 2,
+                          "tiene 7 Minions guardia y 2 bloques moviles");
                 verificar(!m.esParedEn(m.inicioMario()) && !m.esParedEn(m.salida()),
                           "Mario y la salida estan en pasillos");
+                // Se puede llegar de M a S siguiendo el camino mas corto.
+                MapaLaberinto::Celda actual = m.celdaInicio(), sig{0, 0};
+                int pasos = 0;
+                while (actual != m.celdaSalida() && pasos < 2000 &&
+                       m.siguientePaso(actual, m.celdaSalida(), sig)) {
+                    actual = sig;
+                    ++pasos;
+                }
+                verificar(actual == m.celdaSalida(), "desde la M se puede llegar a la S");
             } catch (const Excepciones_de_Recursos&) {
                 // no está en esta carpeta: se prueba la siguiente
+            } catch (const Excepciones_del_Mapa& e) {
+                // El archivo SÍ existe pero está mal escrito (vacío, filas de
+                // distinto ancho, caracteres raros...): es una falla, no se omite.
+                cargo = true;
+                printf("     %s\n", e.what());
+                verificar(false, "el archivo mapas/laberinto1.txt esta bien escrito (ver el mensaje de arriba)");
             }
         }
         if (!cargo)
-            printf("  (no se encontro mapas/laberinto1.txt: se omiten estas 3 pruebas)\n");
+            printf("  (no se encontro mapas/laberinto1.txt: se omiten estas 4 pruebas)\n");
     }
 
     correctas = total - fallas;
