@@ -18,7 +18,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menubar->hide();
     ui->statusbar->hide();
 
-    setWindowTitle("Mario huelguista");
+    setWindowTitle("Guerra de Tropical Oil Company");
     resize(1100, 760);
     vista_->setFocus();
 }

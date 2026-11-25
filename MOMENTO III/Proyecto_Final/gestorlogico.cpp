@@ -40,8 +40,17 @@ void gestorlogico::cargarNivel(int indice){
 //flujo de la partida
 
 void gestorlogico::iniciar(){
+    iniciarEn(0);
+}
+
+//partida nueva desde el nivel que se eligio en el menu de niveles
+//el indice se valida antes de liberar nada, asi un indice malo no cambia el juego
+
+void gestorlogico::iniciarEn(int indice){
+    if(indice < 0 || indice >= totalniveles_)
+        throw Excepciones_del_Juego("GestorLogico: No existe el nivel elegido");
     vidas_ = VIDAS_INICIALES;
-    cargarNivel(0);
+    cargarNivel(indice);
 }
 
 //se llama una vez por fotograma desde el qtimer de la interfaz: es el unico lugar donde corre la logica del juego asi se mantiene lo mas corto posible
@@ -97,4 +106,3 @@ bool gestorlogico::setdificultad(NivelDificultad dificultad){
     dificultad_ = dificultad;
     return true;
 }
-
