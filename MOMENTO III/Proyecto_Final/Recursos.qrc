@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>mapas/laberinto1.txt</file>
+    </qresource>
+</RCC>

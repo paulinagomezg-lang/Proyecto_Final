@@ -9,6 +9,8 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
+class VistaJuego;
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -19,5 +21,6 @@ public:
 
 private:
     Ui::MainWindow *ui;
+    VistaJuego *vista_;   // sin dueño: Qt la borra porque su padre es esta ventana
 };
 #endif // MAINWINDOW_H
