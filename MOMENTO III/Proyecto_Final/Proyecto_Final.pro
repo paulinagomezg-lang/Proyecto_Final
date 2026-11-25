@@ -7,9 +7,12 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    BloqueMovil.cpp \
     Energiacarrera.cpp \
     MapaLaberinto.cpp \
+    MinionGuardia.cpp \
     Nivel.cpp \
+    NivelLaberinto.cpp \
     Protagonista.cpp \
     fabricaniveles.cpp \
     gestorlogico.cpp \
@@ -20,12 +23,15 @@ SOURCES += \
     personaje.cpp
 
 HEADERS += \
+    BloqueMovil.h \
     Energiacarrera.h \
     Excepciones_del_Juego.h \
     Excepciones_del_Mapa.h \
     MapaLaberinto.h \
+    MinionGuardia.h \
     Nivel.h \
     NivelDificultad.h \
+    NivelLaberinto.h \
     Protagonista.h \
     bloquetierra.h \
     fabricaniveles.h \

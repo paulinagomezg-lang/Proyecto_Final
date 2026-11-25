@@ -14,6 +14,9 @@ void pruebasNivel(int& correctas, int& totales);
 void pruebasPersonajeEnemigo(int& correctas, int& totales);
 void pruebasProtagonista(int& correctas, int& totales);
 void pruebasMapaLaberinto(int& correctas, int& totales);
+void pruebasMinionGuardia(int& correctas, int& totales);
+void pruebasBloqueMovil(int& correctas, int& totales);
+void pruebasNivelLaberinto(int& correctas, int& totales);
 
 struct Suite
 {
@@ -38,6 +41,9 @@ int main()
                              {"Protagonista",        pruebasProtagonista},
                              {"Nivel",               pruebasNivel},
                              {"MapaLaberinto",       pruebasMapaLaberinto},
+                             {"MinionGuardia",       pruebasMinionGuardia},
+                             {"BloqueMovil",         pruebasBloqueMovil},
+                             {"NivelLaberinto",      pruebasNivelLaberinto},
                              };
     // Cantidad de suites, calculada por el compilador (no hay que cambiarla
     // al agregar una prueba nueva).
