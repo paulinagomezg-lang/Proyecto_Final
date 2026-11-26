@@ -11,6 +11,8 @@
 #include <QPixmap>
 #include <QRect>
 #include <QString>
+#include <QPointF>
+#include <QColor>
 
 class QKeyEvent;
 class QPaintEvent;
@@ -79,6 +81,10 @@ private:
     // Dibujo
     void dibujarHud(QPainter& p, const QRect& barra);
     void dibujarHudBloques(QPainter& p, const QRect& barra, float tiempo);   // nivel 1
+    void actualizarTextosHud();                     // rehace los textos solo si cambiaron
+    static void dibujarCorazon(QPainter& p, QPointF centro, float tam, bool lleno);
+    static void dibujarBarra(QPainter& p, const QRect& marco, float fraccion,
+                             const QColor& color, const QString& etiqueta);
     void dibujarMensaje(QPainter& p, const QString& titulo, const QString& detalle);
     void dibujarMenu(QPainter& p);
     void prepararFondoMenu();                       // cielo, colinas, ladrillos y título
@@ -103,6 +109,22 @@ private:
     int opcionMenu_;               // botón resaltado en la pantalla actual
     int nivelElegido_;             // el que se eligió en NIVELES
     QPixmap fondoMenu_;            // la portada sin el panel, dibujada una vez
+
+    // Textos de la barra de arriba. Armar un QString pide memoria, así que
+    // no se rehacen en cada fotograma: solo cuando cambia el valor que muestran.
+    struct TextosHud
+    {
+        int nivel = -1;
+        int dificultad = -1;
+        int segundos = -1;
+        int porcentajeEnergia = -1;
+        QString textoEnergia;      // "ENERGÍA 75%"
+        QString textoNivel;        // "NIVEL 1/2 · NORMAL"
+        QString textoTiempo;       // "01:23"
+        int segundosApagon = -1;
+        QString textoApagon;       // "¡APAGÓN!  4 s"
+    };
+    TextosHud hud_;
 };
 
 #endif // VISTAJUEGO_H

@@ -1,10 +1,13 @@
 <RCC>
     <qresource prefix="/">
         <file>mapas/laberinto1.txt</file>
+        <file>sonidos/alerta.wav</file>
+        <file>sonidos/apagon.wav</file>
+        <file>sonidos/captura.wav</file>
+        <file>sonidos/item.wav</file>
+        <file>sonidos/musica_laberinto.wav</file>
         <file>sonidos/musica_nivel1.wav</file>
         <file>sonidos/salto.wav</file>
-        <file>sonidos/item.wav</file>
-        <file>sonidos/captura.wav</file>
         <file>sonidos/victoria.wav</file>
     </qresource>
 </RCC>

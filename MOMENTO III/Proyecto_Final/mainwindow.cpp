@@ -19,7 +19,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->statusbar->hide();
 
     setWindowTitle("Guerra de Tropical Oil Company");
-    resize(1100, 760);
+    resize(1100, 760);                    // tamaño si el jugador la desmaximiza
+    setWindowState(Qt::WindowMaximized);  // abre ocupando toda la pantalla
     vista_->setFocus();
 }
 

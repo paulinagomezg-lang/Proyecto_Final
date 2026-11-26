@@ -25,6 +25,9 @@ private:
     QSoundEffect item_;
     QSoundEffect captura_;
     QSoundEffect victoria_;
+    QSoundEffect musicaLaberinto_;
+    QSoundEffect alerta_;
+    QSoundEffect apagon_;
 
     // Lo que había en el fotograma anterior.
     const Nivel* nivelAnterior_;   // sin dueño: solo para comparar
@@ -32,6 +35,8 @@ private:
     int   estadoAnterior_;         // EstadoJuego guardado como int
     int   apoyoAnterior_;          // bloque que pisaba Mario (-1 en el aire)
     int   itemsRecogidos_;
+    bool  perseguianAntes_;        // algún Minion perseguía a Mario
+    bool  lucesApagadasAntes_;
 };
 
 #endif // GESTORSONIDO_H

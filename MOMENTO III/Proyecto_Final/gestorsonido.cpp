@@ -3,6 +3,8 @@
 #include "Nivel.h"
 #include "nivelbloques.h"
 #include "itempoder.h"
+#include "NivelLaberinto.h"
+#include "MinionGuardia.h"
 #include "Protagonista.h"
 #include "Excepciones_del_Juego.h"
 
@@ -20,6 +22,22 @@ const char* const RUTA_SALTO    = ":/sonidos/salto.wav";
 const char* const RUTA_ITEM     = ":/sonidos/item.wav";
 const char* const RUTA_CAPTURA  = ":/sonidos/captura.wav";
 const char* const RUTA_VICTORIA = ":/sonidos/victoria.wav";
+const char* const RUTA_MUSICA_LABERINTO = ":/sonidos/musica_laberinto.wav";
+const char* const RUTA_ALERTA   = ":/sonidos/alerta.wav";
+const char* const RUTA_APAGON   = ":/sonidos/apagon.wav";
+
+// Volumen de la música del laberinto con luz y durante el apagón
+// (en el apagón baja para que se sienta el silencio).
+const float VOLUMEN_LABERINTO = 0.35f;
+const float VOLUMEN_LABERINTO_APAGON = 0.12f;
+
+// true si al menos un Minion está persiguiendo a Mario.
+bool algunoPersigue(const NivelLaberinto& nivel)
+{
+    for (const MinionGuardia* g : nivel.guardias())
+        if (g->estado() == EstadoAgente::PERSEGUIR) return true;
+    return false;
+}
 
 int contarRecogidos(const NivelBloques& nivel)
 {
@@ -36,7 +54,9 @@ GestorSonido::GestorSonido()
     tiempoAnterior_(0.0f),
     estadoAnterior_(static_cast<int>(EstadoJuego::MENU)),
     apoyoAnterior_(-1),
-    itemsRecogidos_(0)
+    itemsRecogidos_(0),
+    perseguianAntes_(false),
+    lucesApagadasAntes_(false)
 {
 }
 
@@ -57,6 +77,11 @@ void GestorSonido::cargar()
     prepararEfecto(captura_,  RUTA_CAPTURA,  0.8f);
     prepararEfecto(victoria_, RUTA_VICTORIA, 0.8f);
     musica_.setLoopCount(QSoundEffect::Infinite);
+
+    prepararEfecto(musicaLaberinto_, RUTA_MUSICA_LABERINTO, VOLUMEN_LABERINTO);
+    prepararEfecto(alerta_,  RUTA_ALERTA,  0.8f);
+    prepararEfecto(apagon_,  RUTA_APAGON,  0.9f);
+    musicaLaberinto_.setLoopCount(QSoundEffect::Infinite);
 }
 
 // Cuando empieza un nivel (o se reinicia), lo anterior ya no sirve.
@@ -69,6 +94,12 @@ void GestorSonido::reiniciarSeguimiento(const Nivel* nivel)
     if (const NivelBloques* bloques = dynamic_cast<const NivelBloques*>(nivel)) {
         apoyoAnterior_ = bloques->indiceBloqueApoyo();
         itemsRecogidos_ = contarRecogidos(*bloques);
+    }
+    perseguianAntes_ = false;
+    lucesApagadasAntes_ = false;
+    if (const NivelLaberinto* laberinto = dynamic_cast<const NivelLaberinto*>(nivel)) {
+        perseguianAntes_ = algunoPersigue(*laberinto);
+        lucesApagadasAntes_ = laberinto->lucesApagadas();
     }
 }
 
@@ -97,6 +128,22 @@ void GestorSonido::actualizar(const gestorlogico& juego)
         itemsRecogidos_ = recogidos;
     }
 
+    // --- Efectos del nivel 2 (solo suenan al CAMBIAR, no cada fotograma) ---
+    const NivelLaberinto* laberinto = dynamic_cast<const NivelLaberinto*>(nivel);
+    if (laberinto != nullptr) {
+        const bool persiguen = algunoPersigue(*laberinto);
+        if (persiguen && !perseguianAntes_)
+            alerta_.play();                      // un Minion acaba de verlo
+
+        const bool apagadas = laberinto->lucesApagadas();
+        if (apagadas != lucesApagadasAntes_) {
+            if (apagadas) apagon_.play();        // se fue la luz
+            musicaLaberinto_.setVolume(apagadas ? VOLUMEN_LABERINTO_APAGON : VOLUMEN_LABERINTO);
+        }
+        perseguianAntes_ = persiguen;
+        lucesApagadasAntes_ = apagadas;
+    }
+
     // --- Efectos de los dos niveles, al cambiar de estado ---
     if (static_cast<int>(estado) != estadoAnterior_) {
         if (estado == EstadoJuego::VIDA_PERDIDA || estado == EstadoJuego::DERROTA)
@@ -113,6 +160,12 @@ void GestorSonido::actualizar(const gestorlogico& juego)
     else if (!conMusica && musica_.isPlaying())
         musica_.stop();
 
+    // --- Música del nivel 2 ---
+    const bool conMusicaLaberinto = laberinto != nullptr && estado == EstadoJuego::JUGANDO;
+    if (conMusicaLaberinto && !musicaLaberinto_.isPlaying())
+        musicaLaberinto_.play();
+    else if (!conMusicaLaberinto && musicaLaberinto_.isPlaying())
+        musicaLaberinto_.stop();
+
     if (nivel != nullptr) tiempoAnterior_ = nivel->tiempoTranscurrido();
 }
-
