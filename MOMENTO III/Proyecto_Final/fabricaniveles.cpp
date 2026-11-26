@@ -1,4 +1,5 @@
-#include "FabricaNiveles.h"
+#include "fabricaniveles.h"
+#include "nivelbloques.h"
 #include "NivelLaberinto.h"
 #include "Excepciones_del_Juego.h"
 #include <QFile>
@@ -30,15 +31,17 @@ const string& textoLaberinto()
 }
 
 }
+// Nivel 1: los bloques (vista lateral). Nivel 2: el laberinto (vista cenital).
 int totalNiveles()
 {
-    return 1;
+    return 2;
 }
 
 const char* nombreNivel(int indice)
 {
     switch (indice) {
-    case 0:  return "EL LABERINTO"; // cuando esté NivelBloques: 0 = "LOS BLOQUES", 1 = "EL LABERINTO"
+    case 0:  return "LOS BLOQUES";
+    case 1:  return "EL LABERINTO";
     default: return "?";
     }
 }
@@ -47,6 +50,10 @@ Nivel* crearNivel(int indice, NivelDificultad dificultad)
 {
     switch (indice) {
     case 0:
+        // El mapa del nivel 1 está en el código y cambia con la dificultad
+        // (cuántos ítems hay). El constructor lanza si el mapa no es válido.
+        return new NivelBloques(NivelBloques::mapaPorDefecto(dificultad), dificultad);
+    case 1:
         return new NivelLaberinto(textoLaberinto(), "laberinto1.txt", dificultad);
     default:
         throw Excepciones_del_Juego("FabricaNiveles: no existe el nivel pedido");

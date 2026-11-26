@@ -1,4 +1,4 @@
-QT += widgets
+QT += widgets multimedia
 
 CONFIG += c++17
 
@@ -7,6 +7,8 @@ CONFIG += c++17
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    dibujobloques.cpp \
+    gestorsonido.cpp \
     main.cpp\
     BloqueMovil.cpp \
     DibujoLaberinto.cpp \
@@ -39,10 +41,12 @@ HEADERS += \
     Protagonista.h \
     VistaJuego.h \
     bloquetierra.h \
+    dibujobloques.h \
     fabricaniveles.h \
     foso.h \
     gestorlogico.h \
     enemigo.h \
+    gestorsonido.h \
     itempoder.h \
     mainwindow.h \
     minionejercitocolombiano.h \

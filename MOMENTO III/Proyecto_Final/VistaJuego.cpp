@@ -1,10 +1,10 @@
 #include "VistaJuego.h"
-#include "FabricaNiveles.h"
+#include "fabricaniveles.h"
 #include "Nivel.h"
 #include "NivelLaberinto.h"
-#include "protagonista.h"
+#include "nivelbloques.h"
+#include "Protagonista.h"
 #include "Excepciones_del_Juego.h"
-
 #include <QPainter>
 #include <QKeyEvent>
 #include <QMouseEvent>
@@ -111,6 +111,9 @@ VistaJuego::VistaJuego(QWidget* parent)
     setMouseTracking(true);                   // para resaltar el botón bajo el ratón
     setMinimumSize(640, 560);
 
+    // Los sonidos se cargan una sola vez, antes de arrancar el ciclo.
+    sonido_.cargar();
+
     temporizador_.setTimerType(Qt::PreciseTimer);
     connect(&temporizador_, &QTimer::timeout, this, &VistaJuego::tick);
     temporizador_.start(MS_POR_FOTOGRAMA);
@@ -121,9 +124,6 @@ VistaJuego::VistaJuego(QWidget* parent)
 /*
  * Llama a una acción de gestorlogico que puede lanzar una excepción
  * (crear un nivel lee el mapa: puede faltar el archivo o estar mal).
- * Las excepciones solo pueden salir al CARGAR, nunca en el ciclo de 60 fps.
- * Si falla: se muestra el mensaje y el juego queda en el menú (gestorlogico
- * ya liberó el nivel, sin fugas).
  */
 template <typename Accion>
 void VistaJuego::ejecutarSeguro(Accion accion)
@@ -155,6 +155,7 @@ void VistaJuego::tick()
     const float dt = static_cast<float>(reloj_.nsecsElapsed()) * 1e-9f;
     reloj_.restart();
     juego_.actualizar(dt);
+    sonido_.actualizar(juego_);   // suena lo que pasó en este fotograma
     update();   // Qt llamará a paintEvent()
 }
 
@@ -292,9 +293,7 @@ void VistaJuego::accionPrincipal()
     reloj_.restart();
 }
 
-// ------------------------------------------------------------------
 // Menú: navegación
-// ------------------------------------------------------------------
 
 void VistaJuego::irAPantalla(PantallaMenu pantalla, int opcion)
 {
@@ -342,8 +341,9 @@ int VistaJuego::lineasInfo(QString* lineas) const
         lineas[2] = "Shift: correr";
         lineas[3] = "Espacio: saltar (nivel 1)";
         lineas[4] = "P: pausa · Esc: menú";
-        lineas[5] = "Si te quedas quieto, ¡te duermes!";
-        return 6;
+        lineas[5] = "Nivel 1: la pesa kg te vuelve pesado";
+        lineas[6] = "Nivel 2: si te quedas quieto, ¡te duermes!";
+        return 7;
     }
     if (pantalla_ == PantallaMenu::CREDITOS) {
         lineas[0] = QString("%1 %2").arg(TITULO_LINEA_1).arg(TITULO_LINEA_2);
@@ -527,12 +527,8 @@ VistaJuego::DisenoMenu VistaJuego::calcularDiseno() const
     return d;
 }
 
-/*
- * Portada (estilo retro): cielo, nubes, colinas, piso de ladrillos y la
- * placa con el título. Todo eso no cambia, así que se dibuja UNA vez en
- * una imagen (fondoMenu_) y solo se vuelve a dibujar si cambia el tamaño
- * de la ventana. En cada fotograma solo se dibuja el panel con los botones.
- */
+//Portada
+
 void VistaJuego::prepararFondoMenu()
 {
     const int w = width(), h = height();
@@ -721,10 +717,11 @@ void VistaJuego::paintEvent(QPaintEvent*)
     // Cada nivel se dibuja a su manera.
     if (const NivelLaberinto* laberinto = dynamic_cast<const NivelLaberinto*>(nivel))
         dibujoLaberinto_.dibujar(p, *laberinto, areaJuego, tiempo);
-    // else if (const NivelBloques* bloques = dynamic_cast<...>(nivel))   // nivel 1 (tu compañero)
-    //     dibujoBloques_.dibujar(p, *bloques, areaJuego, tiempo);
+    else if (const NivelBloques* bloques = dynamic_cast<const NivelBloques*>(nivel))
+        dibujoBloques_.dibujar(p, *bloques, areaJuego, tiempo);
 
     dibujarHud(p, QRect(0, 0, width(), ALTO_HUD));
+    dibujarHudBloques(p, QRect(0, 0, width(), ALTO_HUD), tiempo);
 
     switch (estado) {
     case EstadoJuego::PAUSA:
@@ -815,4 +812,36 @@ void VistaJuego::dibujarMensaje(QPainter& p, const QString& titulo, const QStrin
     fuente.setPixelSize(16);
     p.setFont(fuente);
     p.drawText(QRect(caja.x(), caja.y() + 80, caja.width(), 40), Qt::AlignCenter, detalle);
+}
+
+/*
+ * Avisos del nivel 1 en el centro de la barra de arriba:
+ *   - Pesado: cuántos segundos le quedan al poder.
+ *   - Evento por tiempo: cuánto falta para que los bloques se debiliten
+ *     (en naranja los últimos 3 s, y parpadea el último segundo y medio,
+ *     al mismo tiempo que los bloques).
+ */
+void VistaJuego::dibujarHudBloques(QPainter& p, const QRect& barra, float tiempo)
+{
+    const NivelBloques* bloques = dynamic_cast<const NivelBloques*>(juego_.nivelactual());
+    if (bloques == nullptr || bloques->protagonista() == nullptr) return;
+    const Protagonista& m = *bloques->protagonista();
+
+    const float falta = bloques->tiempoHastaDebilitar();
+    const bool rotos = bloques->bloquesRotos();
+    QString aviso;
+    if (rotos)
+        aviso = "¡Los bloques se rompieron!";
+    else if (bloques->eventosDebilitamiento() == 0)
+        aviso = QString("Bloques se agrietan en %1 s").arg(static_cast<int>(falta) + 1);
+    else
+        aviso = QString("Bloques se rompen en %1 s").arg(static_cast<int>(falta) + 1);
+    if (m.esPesado())
+        aviso = QString("¡PESADO! %1 s   ·   ").arg(static_cast<int>(m.tiempoPesadoRestante()) + 1) + aviso;
+
+    const bool urgente = rotos || falta <= 3.0f;
+    const bool parpadeo = !rotos && falta <= 1.5f && static_cast<int>(tiempo * 8.0f) % 2 == 0;
+    if (parpadeo) return;
+    p.setPen(urgente ? QColor(255, 160, 40) : QColor(200, 200, 210));
+    p.drawText(barra, Qt::AlignCenter, aviso);
 }

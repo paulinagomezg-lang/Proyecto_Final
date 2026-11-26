@@ -3,6 +3,8 @@
 
 #include "gestorlogico.h"
 #include "DibujoLaberinto.h"
+#include "DibujoBloques.h"
+#include "GestorSonido.h"
 #include <QWidget>
 #include <QTimer>
 #include <QElapsedTimer>
@@ -16,32 +18,6 @@ class QFocusEvent;
 class QMouseEvent;
 class QPainter;
 
-/*
- * VistaJuego
- * ----------
- * El widget donde se juega. Une la interfaz con la lógica:
- *
- *   QTimer (cada ~16 ms = 60 fps)
- *      -> tick(): mide dt con QElapsedTimer
- *      -> gestorlogico::actualizar(dt)   (toda la lógica del juego)
- *      -> update() -> paintEvent()       (dibuja lo que pasó)
- *
- *   Teclado -> mario->setEntrada(...) / solicitarSalto()
- *
- * Menú (antes de jugar), con teclado o ratón:
- *   PRINCIPAL:  JUGAR · NIVELES · OPCIONES · CRÉDITOS   (X = salir)
- *   JUGAR o NIVELES -> elegir el nivel -> elegir la dificultad -> a jugar
- *   Flechas arriba/abajo: elegir · Enter: aceptar · Esc: atrás
- *
- * Controles en el juego:
- *   W A S D o flechas: moverse      Shift: correr      Espacio: saltar
- *   P: pausa       Enter: reintentar / siguiente nivel / jugar otra vez
- *   Esc: volver al menú
- *
- * Memoria: gestorlogico va por valor dentro de la vista (se destruye con
- * ella y él libera el nivel). El temporizador y el reloj también van por
- * valor: no hay new ni delete en esta clase.
- */
 class VistaJuego : public QWidget
 {
     Q_OBJECT
@@ -102,12 +78,15 @@ private:
 
     // Dibujo
     void dibujarHud(QPainter& p, const QRect& barra);
+    void dibujarHudBloques(QPainter& p, const QRect& barra, float tiempo);   // nivel 1
     void dibujarMensaje(QPainter& p, const QString& titulo, const QString& detalle);
     void dibujarMenu(QPainter& p);
     void prepararFondoMenu();                       // cielo, colinas, ladrillos y título
 
     gestorlogico juego_;
     DibujoLaberinto dibujoLaberinto_;
+    DibujoBloques dibujoBloques_;      // nivel 1
+    GestorSonido sonido_;              // música del nivel 1 y efectos
     QTimer temporizador_;
     QElapsedTimer reloj_;          // dt entre fotogramas
     QElapsedTimer relojTotal_;     // tiempo desde que abrió (parpadeos)

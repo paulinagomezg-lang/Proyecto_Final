@@ -43,11 +43,15 @@ public:
     const vector<BloqueTierra>& bloques() const { return bloques_; }
     const vector<ItemPoder>&    items() const   { return items_; }
     const vector<Foso>&         fosos() const   { return fosos_; }
+    const vector<MinionEjercitoColombiano*>& minions() const { return minions_; }   // para dibujarlos
     float xMeta() const                         { return xMeta_; }
     int   indiceBloqueApoyo() const             { return indiceApoyo_; }   // -1 si está en el aire
     bool  enCaidaLibre() const                  { return caidaLibre_; }
     float tiempoDebilitamiento() const          { return tiempoDebilitamiento_; }
     float tiempoHastaDebilitar() const          { return tiempoDebilitamiento_ - acumuladoDebilitamiento_; }
+    int   eventosDebilitamiento() const { return eventosDebilitamiento_; }
+    bool  bloquesRotos() const          { return eventosDebilitamiento_ >= EVENTOS_PARA_ROMPER; }
+    static constexpr int EVENTOS_PARA_ROMPER = 2;
     float limiteHundimiento() const             { return limiteHundimiento_; }
     float rigidezInicial() const                { return rigidezInicial_; }
     float gravedad() const                      { return gravedad_; }
@@ -99,6 +103,8 @@ private:
     int   indiceRecuperando_;    // último bloque que dejó (vuelve a su lugar)
     bool  caidaLibre_;           // cayendo porque se rompió el bloque o hacia un foso
     float acumuladoDebilitamiento_;
+    int   eventosDebilitamiento_;
 };
 
 #endif // NIVELBLOQUES_H
+
