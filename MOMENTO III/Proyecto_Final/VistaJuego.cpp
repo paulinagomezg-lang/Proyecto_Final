@@ -15,6 +15,8 @@
 #include <QColor>
 #include <QPen>
 #include <QLinearGradient>
+#include <QPainterPath>
+#include "MinionGuardia.h"
 #include <QString>
 #include <exception>
 
@@ -23,7 +25,7 @@ using namespace std;
 namespace {
 
 const int MS_POR_FOTOGRAMA = 16;   // ~60 fotogramas por segundo
-const int ALTO_HUD = 44;           // barra de arriba (vidas, energía...)
+const int ALTO_HUD = 52;           // barra de arriba (vidas, energía...)
 const int MARGEN = 8;
 
 // ---- Textos de la portada (aquí se cambian) ----
@@ -746,51 +748,173 @@ void VistaJuego::paintEvent(QPaintEvent*)
     }
 }
 
-// Barra de arriba: nivel, dificultad, vidas, energía y avisos del apagón.
+// ------------------------------------------------------------------
+// Barra de arriba (HUD)
+// ------------------------------------------------------------------
+
+/*
+ * Rehace los textos de la barra SOLO si cambió lo que muestran (el nivel,
+ * la dificultad o el segundo del reloj). Así, en un segundo de juego se
+ * arma el texto del tiempo una vez y no 60.
+ */
+void VistaJuego::actualizarTextosHud()
+{
+    const int nivel = juego_.indicenivelactual();
+    const int dificultad = static_cast<int>(juego_.dificultad());
+    if (nivel != hud_.nivel || dificultad != hud_.dificultad) {
+        hud_.nivel = nivel;
+        hud_.dificultad = dificultad;
+        hud_.textoNivel = QString("NIVEL %1/%2  ·  %3")
+                              .arg(nivel + 1)
+                              .arg(juego_.totalniveles())
+                              .arg(nombreDificultad(juego_.dificultad()).toUpper());
+    }
+    const Nivel* n = juego_.nivelactual();
+    const int segundos = n != nullptr ? static_cast<int>(n->tiempoTranscurrido()) : 0;
+    if (segundos != hud_.segundos) {
+        hud_.segundos = segundos;
+        hud_.textoTiempo = QString("%1:%2").arg(segundos / 60, 2, 10, QChar('0'))
+                               .arg(segundos % 60, 2, 10, QChar('0'));
+    }
+    // Porcentaje de energía: el texto se rehace solo cuando cambia el número.
+    const int energia = (n != nullptr && n->protagonista() != nullptr)
+                            ? static_cast<int>(n->protagonista()->energia().porcentaje() * 100.0f + 0.5f) : 100;
+    if (energia != hud_.porcentajeEnergia) {
+        hud_.porcentajeEnergia = energia;
+        hud_.textoEnergia = QString("ENERGÍA %1%").arg(energia);
+    }
+}
+
+// Corazón: dos círculos arriba y un triángulo abajo (lleno = vida que queda).
+void VistaJuego::dibujarCorazon(QPainter& p, QPointF c, float tam, bool lleno)
+{
+    const float r = tam * 0.28f;
+    QPainterPath corazon;
+    corazon.addEllipse(QPointF(c.x() - r, c.y() - r * 0.6), r, r);
+    corazon.addEllipse(QPointF(c.x() + r, c.y() - r * 0.6), r, r);
+    QPainterPath punta;
+    punta.moveTo(c.x() - 2 * r, c.y() - r * 0.3);
+    punta.lineTo(c.x() + 2 * r, c.y() - r * 0.3);
+    punta.lineTo(c.x(), c.y() + 2 * r);
+    punta.closeSubpath();
+    corazon = corazon.united(punta);
+    p.setPen(QPen(lleno ? QColor(120, 0, 0) : QColor(90, 90, 100), 1.5));
+    p.setBrush(lleno ? QColor(230, 40, 50) : QColor(45, 45, 55));
+    p.drawPath(corazon);
+}
+
+// Barra con etiqueta a la izquierda (energía, sueño, poder pesado).
+void VistaJuego::dibujarBarra(QPainter& p, const QRect& marco, float fraccion,
+                              const QColor& color, const QString& etiqueta)
+{
+    if (fraccion < 0.0f) fraccion = 0.0f;
+    if (fraccion > 1.0f) fraccion = 1.0f;
+    p.setPen(QColor(220, 220, 230));
+    p.drawText(QRect(marco.left() - 128, marco.top() - 4, 122, marco.height() + 8),
+               Qt::AlignVCenter | Qt::AlignRight, etiqueta);
+    p.setPen(QPen(QColor(220, 220, 230), 1));
+    p.setBrush(QColor(30, 30, 40));
+    p.drawRect(marco);
+    const int lleno = static_cast<int>(static_cast<float>(marco.width() - 2) * fraccion);
+    p.fillRect(QRect(marco.left() + 1, marco.top() + 1, lleno, marco.height() - 1), color);
+}
+
+/*
+ * Barra de arriba:
+ *   izquierda: corazones (vidas), nivel y dificultad, y el tiempo del nivel
+ *   centro:    el aviso más importante del momento:
+ *              ¡TE VIERON! (te persiguen) > "?" (sospechan) > apagón
+ *   derecha:   energía para correr y, debajo, la barra de sueño
+ *              (laberinto) o la del poder pesado (cuando lo tiene)
+ */
 void VistaJuego::dibujarHud(QPainter& p, const QRect& barra)
 {
+    actualizarTextosHud();
     p.fillRect(barra, QColor(10, 10, 16));
-    QFont fuente = p.font();
-    fuente.setPixelSize(16);
-    fuente.setBold(true);
-    p.setFont(fuente);
+    p.setRenderHint(QPainter::Antialiasing, true);
+
+    // Vidas como corazones (VIDAS_INICIALES en total).
+    for (int i = 0; i < gestorlogico::VIDAS_INICIALES; ++i)
+        dibujarCorazon(p, QPointF(22 + i * 26, barra.center().y()), 22.0f, i < juego_.vidas());
+
+    const int xTexto = 22 + gestorlogico::VIDAS_INICIALES * 26 + 8;
+    p.setFont(fuenteRetro(16));
     p.setPen(Qt::white);
+    p.drawText(QRect(xTexto, barra.top(), 320, barra.height()), Qt::AlignVCenter | Qt::AlignLeft, hud_.textoNivel);
+    p.setPen(QColor(180, 200, 255));
+    p.drawText(QRect(xTexto + 225, barra.top(), 80, barra.height()), Qt::AlignVCenter | Qt::AlignLeft, hud_.textoTiempo);
 
-    const int centroY = barra.center().y();
-    const QString izquierda = QString("Nivel %1/%2   ·   %3   ·   Vidas: %4")
-                                  .arg(juego_.indicenivelactual() + 1)
-                                  .arg(juego_.totalniveles())
-                                  .arg(nombreDificultad(juego_.dificultad()))
-                                  .arg(juego_.vidas());
-    p.drawText(QRect(12, barra.y(), barra.width() / 2, barra.height()), Qt::AlignVCenter | Qt::AlignLeft, izquierda);
-
-    // Barra de energía para correr (se pone roja cuando está agotada).
     const Nivel* nivel = juego_.nivelactual();
-    if (nivel != nullptr && nivel->protagonista() != nullptr) {
-        const Protagonista& m = *nivel->protagonista();
-        const int anchoBarra = 180;
-        const QRect marco(barra.width() - anchoBarra - 16, centroY - 8, anchoBarra, 16);
-        p.setPen(Qt::white);
-        p.drawText(QRect(marco.x() - 90, barra.y(), 85, barra.height()), Qt::AlignVCenter | Qt::AlignRight, "Energía");
-        p.setBrush(Qt::NoBrush);
-        p.drawRect(marco);
-        const int lleno = static_cast<int>(static_cast<float>(marco.width() - 2) * m.energia().porcentaje());
-        p.fillRect(QRect(marco.x() + 1, marco.y() + 1, lleno, marco.height() - 2),
-                   m.energia().agotada() ? QColor(220, 60, 60) : QColor(70, 200, 90));
+    if (nivel == nullptr || nivel->protagonista() == nullptr) {
+        p.setRenderHint(QPainter::Antialiasing, false);
+        return;
+    }
+    const Protagonista& m = *nivel->protagonista();
+    const NivelLaberinto* laberinto = dynamic_cast<const NivelLaberinto*>(nivel);
+
+    // Barras de la derecha.
+    p.setFont(fuenteRetro(13));
+    const int anchoBarra = 170;
+    const QRect arriba(barra.right() - anchoBarra - 14, barra.top() + 9, anchoBarra, 13);
+    const QRect abajo(barra.right() - anchoBarra - 14, barra.top() + 30, anchoBarra, 13);
+    dibujarBarra(p, arriba, m.energia().porcentaje(),
+                 m.energia().agotada() ? QColor(220, 60, 60) : QColor(70, 200, 90), hud_.textoEnergia);
+    if (m.esPesado()) {
+        dibujarBarra(p, abajo, m.tiempoPesadoRestante() / m.duracionPesado(), QColor(170, 120, 60), "PESADO");
+    } else if (laberinto != nullptr) {
+        // Sueño: se llena mientras está quieto; llena = se duerme.
+        const float sueno = m.estaDormido() ? 1.0f : m.tiempoQuieto() / m.tiempoParaDormir();
+        dibujarBarra(p, abajo, sueno, m.estaDormido() ? QColor(120, 120, 255) : QColor(150, 170, 255), "SUEÑO");
     }
 
-    // Aviso del apagón (solo en el laberinto).
-    if (const NivelLaberinto* laberinto = dynamic_cast<const NivelLaberinto*>(nivel)) {
-        QString aviso;
-        if (laberinto->lucesApagadas())
-            aviso = QString("¡Apagón!  %1 s").arg(static_cast<int>(laberinto->tiempoParaCambioDeLuz()) + 1);
-        else if (laberinto->avisoApagon())
-            aviso = "Las luces van a fallar...";
-        if (!aviso.isEmpty()) {
-            p.setPen(QColor(255, 200, 60));
-            p.drawText(barra, Qt::AlignCenter, aviso);
+    // Aviso del centro: lo más importante primero. Los textos fijos se
+    // crean una sola vez (static); el del apagón, solo cuando cambia el segundo.
+    static const QString TE_VIERON = "¡TE VIERON!";
+    static const QString TE_BUSCAN = "TE ESTÁN BUSCANDO";
+    static const QString SOSPECHAN = "?";
+    static const QString DORMIDO = "Zzz...";
+    static const QString VAN_A_FALLAR = "Las luces van a fallar...";
+    const QString* aviso = nullptr;
+    QColor colorAviso(255, 200, 60);
+    if (laberinto != nullptr) {
+        bool persiguen = false, buscan = false, sospechan = false;
+        for (const MinionGuardia* g : laberinto->guardias()) {
+            switch (g->estado()) {
+            case EstadoAgente::PERSEGUIR: persiguen = true; break;
+            case EstadoAgente::BUSCAR:    buscan = true;    break;
+            case EstadoAgente::SOSPECHAR: sospechan = true; break;
+            case EstadoAgente::PATRULLAR: break;
+            }
+        }
+        if (persiguen) {
+            aviso = &TE_VIERON;
+            colorAviso = QColor(255, 70, 70);
+        } else if (buscan) {
+            aviso = &TE_BUSCAN;
+            colorAviso = QColor(200, 130, 255);
+        } else if (sospechan) {
+            aviso = &SOSPECHAN;
+            colorAviso = QColor(255, 170, 0);
+        } else if (m.estaDormido()) {
+            aviso = &DORMIDO;
+            colorAviso = QColor(160, 180, 255);
+        } else if (laberinto->lucesApagadas()) {
+            const int s = static_cast<int>(laberinto->tiempoParaCambioDeLuz()) + 1;
+            if (s != hud_.segundosApagon) {
+                hud_.segundosApagon = s;
+                hud_.textoApagon = QString("¡APAGÓN!  %1 s").arg(s);
+            }
+            aviso = &hud_.textoApagon;
+        } else if (laberinto->avisoApagon()) {
+            aviso = &VAN_A_FALLAR;
         }
     }
+    if (aviso != nullptr) {
+        p.setFont(fuenteRetro(20));
+        p.setPen(colorAviso);
+        p.drawText(QRect(barra.center().x() - 170, barra.top(), 340, barra.height()), Qt::AlignCenter, *aviso);
+    }
+    p.setRenderHint(QPainter::Antialiasing, false);
 }
 
 // Cuadro en el centro con un título y una línea de ayuda.
@@ -836,12 +960,15 @@ void VistaJuego::dibujarHudBloques(QPainter& p, const QRect& barra, float tiempo
         aviso = QString("Bloques se agrietan en %1 s").arg(static_cast<int>(falta) + 1);
     else
         aviso = QString("Bloques se rompen en %1 s").arg(static_cast<int>(falta) + 1);
-    if (m.esPesado())
-        aviso = QString("¡PESADO! %1 s   ·   ").arg(static_cast<int>(m.tiempoPesadoRestante()) + 1) + aviso;
+    // El poder pesado ya se ve como barra (PESADO) a la derecha del HUD, con
+    // su tiempo, así que aquí no se repite.
+    (void)m;
 
     const bool urgente = rotos || falta <= 3.0f;
     const bool parpadeo = !rotos && falta <= 1.5f && static_cast<int>(tiempo * 8.0f) % 2 == 0;
     if (parpadeo) return;
+    p.setFont(fuenteRetro(16));
     p.setPen(urgente ? QColor(255, 160, 40) : QColor(200, 200, 210));
-    p.drawText(barra, Qt::AlignCenter, aviso);
+    // En el centro, entre el tiempo (izquierda) y las barras (derecha).
+    p.drawText(QRect(barra.center().x() - 230, barra.top(), 460, barra.height()), Qt::AlignCenter, aviso);
 }

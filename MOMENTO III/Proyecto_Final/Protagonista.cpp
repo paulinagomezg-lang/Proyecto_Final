@@ -2,6 +2,10 @@
 #include "Excepciones_del_Juego.h"
 using namespace std;
 
+//caminar gasta esta fraccion de lo que gasta correr (0.25 = la cuarta parte).
+//en normal: correr 25/s, caminar 6.25/s -> la barra llena dura unos 16 s caminando
+static const float FRACCION_GASTO_CAMINAR = 0.25f;
+
 
 //los tiempo de dormilon segun la dificultad va en segundos( se elige unicamente para Mario)
 //tiempo para dormir: cuanto puede quedarse quieto
@@ -34,7 +38,7 @@ TiempoSueno tiempoSegunDificultad(NivelDificultad dificultad){
     case NivelDificultad::FACIL: return{5.0f, 1.5f, 0.5f}; //2s sin poder moverse
     case NivelDificultad::NORMAL: return{3.5f,2.0f,1.0f}; //3s sin poder moverse
     case NivelDificultad::DIFICIL: return{2.5f,4.0f,2.0f}; //6s sin poder moverse
-        }
+    }
     return {3.5f,2.0f,1.0f}; //retornamos el valor normal por si hay alguna falla tenga un valor de respaldo
 }
 }
@@ -195,8 +199,20 @@ void Protagonista::actualizar(float dt){
     //solo corre si quiere, se esta moviendo o puede moverse con la energia
     corriendo_ = quiereCorrer_&& seMueve && puedeMoverse() && energia_.puedeCorrer();
 
-    //con el poder pesado gasta energia mas rapido (proporcional a la masa)
-    energia_.actualizar(dt, corriendo_, proporcionMasa());
+    //gasto de energia segun lo que haga Mario:
+    //  corriendo: gasta completo (con el poder pesado, proporcional a la masa)
+    //  caminando: gasta una fraccion (FRACCION_GASTO_CAMINAR); si ya esta agotado
+    //             no gasta ni recupera, se queda lento hasta que se detenga
+    //  quieto:    recupera
+    const bool caminando = seMueve && puedeMoverse() && !corriendo_;
+    if (corriendo_)
+        energia_.actualizar(dt, true, proporcionMasa());
+    else if (caminando){
+        if (!energia_.agotada())
+            energia_.actualizar(dt, true, FRACCION_GASTO_CAMINAR * proporcionMasa());
+    }
+    else
+        energia_.actualizar(dt, false);
 
     //moviento con las fuerzas que el nivel aplico (euler semi-implicito)
     integrar(dt);

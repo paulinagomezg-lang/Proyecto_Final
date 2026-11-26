@@ -12,7 +12,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     try {
         MainWindow w;
-        w.show();
+        w.showMaximized();   // se ajusta a cualquier pantalla (antes: w.show())
         return QApplication::exec();
     } catch (const exception& e) {
         QMessageBox::critical(nullptr, "Error al abrir el juego", QString::fromUtf8(e.what()));
