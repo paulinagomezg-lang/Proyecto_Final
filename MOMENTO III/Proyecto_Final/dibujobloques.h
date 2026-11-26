@@ -4,6 +4,7 @@
 #include "vector2.h"
 #include <QPointF>
 #include <QRect>
+#include <QPixmap>
 
 class QPainter;
 class NivelBloques;
@@ -27,7 +28,9 @@ private:
 
     void dibujarCielo(QPainter& p, const QRect& area) const;
     void dibujarFosos(QPainter& p, const NivelBloques& nivel) const;
-    void dibujarMinions(QPainter& p, const NivelBloques& nivel) const;
+    void dibujarMinions(QPainter& p, const NivelBloques& nivel, float tiempo) const;
+    void cargarSprites();
+    void prepararSprites();
     void dibujarBloques(QPainter& p, const NivelBloques& nivel, float tiempo) const;
     void dibujarBloque(QPainter& p, const BloqueTierra& b, float rigidezInicial, bool aviso) const;
     void dibujarItems(QPainter& p, const NivelBloques& nivel) const;
@@ -39,6 +42,22 @@ private:
     float anchoMundo_;     // m, del primer al último bloque
     float anchoVisible_;   // m que caben a lo ancho
     float camaraX_;        // x del mundo en el borde izquierdo del área
+
+    // Fondo de la refinería destruida: se lee una vez del .qrc y se escala
+    // al alto del área solo cuando el área cambia (prepararEscala).
+    QPixmap fondoOriginal_;
+    QPixmap fondo_;
+
+    // Sprites de los personajes (los mismos del laberinto). Originales leídos
+    // una vez; escalados solo cuando cambia el área.
+    static const int CUADROS = 3;
+    QPixmap marioOriginal_[2][CUADROS];     // [0 derecha, 1 izquierda][cuadro]
+    QPixmap minionOriginal_[CUADROS];       // de frente, mirando a Mario
+    QPixmap capturadoOriginal_;
+    QPixmap mario_[2][CUADROS];
+    QPixmap marioPesado_[2][CUADROS];       // un poco más grande con la pesa
+    QPixmap minion_[CUADROS];
+    QPixmap capturado_;
 };
 
 #endif // DIBUJOBLOQUES_H

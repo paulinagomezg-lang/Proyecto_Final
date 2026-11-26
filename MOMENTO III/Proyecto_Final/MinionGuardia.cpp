@@ -10,6 +10,11 @@ const float GRADOS = 3.14159265f / 180.0f;
 const float VELOCIDAD_GIRO = 3.14159265f;   // rad/s al mirar alrededor (media vuelta por segundo)
 const float FRACCION_LLEGADA = 0.1f;        // "llegó" si está a menos de 0.1 celdas del punto
 
+// Aprendizaje (por cada escape, multiplicado por tasaAprendizaje)
+const float REDUCCION_REACCION = 0.15f;     // reacciona 15 % más rápido
+const float AUMENTO_VIGILAR = 0.2f;         // +20 % de ir a vigilar zonas frecuentes
+const float DESGASTE_ZONA = 0.6f;           // al vigilar una zona, su peso baja (no se obsesiona)
+
 int distanciaManhattan(MapaLaberinto::Celda a, MapaLaberinto::Celda b)
 {
     return abs(a.columna - b.columna) + abs(a.fila - b.fila);
@@ -23,13 +28,13 @@ ParametrosGuardia ParametrosGuardia::segunDificultad(NivelDificultad dificultad)
 {
     switch (dificultad) {
     case NivelDificultad::FACIL:
-        return {4.0f, 70.0f * GRADOS, 1.2f, 2.6f, 1.2f, 3.0f, 2.5f, 4.0f};
+        return {4.0f, 70.0f * GRADOS, 1.2f, 2.6f, 1.2f, 3.0f, 2.5f, 4.0f, 0.5f};
     case NivelDificultad::NORMAL:
-        return {5.0f, 90.0f * GRADOS, 1.5f, 3.0f, 0.8f, 5.0f, 3.5f, 6.0f};
+        return {5.0f, 90.0f * GRADOS, 1.5f, 3.0f, 0.8f, 5.0f, 3.5f, 6.0f, 1.0f};
     case NivelDificultad::DIFICIL:
-        return {6.5f, 110.0f * GRADOS, 1.8f, 3.4f, 0.4f, 8.0f, 5.0f, 8.0f};
+        return {6.5f, 110.0f * GRADOS, 1.8f, 3.4f, 0.4f, 8.0f, 5.0f, 8.0f, 1.5f};
     }
-    return {5.0f, 90.0f * GRADOS, 1.5f, 3.0f, 0.8f, 5.0f, 3.5f, 6.0f};
+    return {5.0f, 90.0f * GRADOS, 1.5f, 3.0f, 0.8f, 5.0f, 3.5f, 6.0f, 1.0f};
 }
 
 // Construcción
@@ -51,8 +56,12 @@ MinionGuardia::MinionGuardia(const MapaLaberinto& mapa, MapaLaberinto::Celda pue
     destinoRuta_(puesto),
     hayPaso_(false),
     velocidadDeseada_(0.0f, 0.0f),
-    semilla_(semilla * 2654435761u + 12345u)   // mezcla la semilla (nunca queda en 0)
+    semilla_(semilla * 2654435761u + 12345u),  // mezcla la semilla (nunca queda en 0)
+    escapes_(0),
+    factorReaccion_(1.0f),
+    pesoVigilar_(0.0f)
 {
+    zonas_.reserve(MAX_ZONAS);   // única reserva: en el juego no vuelve a pedir memoria
     // Enemigo ya validó radioVision y aperturaCono.
     Excepciones_de_Parametros_Fisicos::exigirPositivo("velPatrulla", parametros.velPatrulla);
     Excepciones_de_Parametros_Fisicos::exigirPositivo("velPersecucion", parametros.velPersecucion);
@@ -60,6 +69,7 @@ MinionGuardia::MinionGuardia(const MapaLaberinto& mapa, MapaLaberinto::Celda pue
     Excepciones_de_Parametros_Fisicos::exigirNoNegativo("tiempoBusqueda", parametros.tiempoBusqueda);
     Excepciones_de_Parametros_Fisicos::exigirNoNegativo("radioOido", parametros.radioOido);
     Excepciones_de_Parametros_Fisicos::exigirNoNegativo("radioPatrulla", parametros.radioPatrulla);
+    Excepciones_de_Parametros_Fisicos::exigirNoNegativo("tasaAprendizaje", parametros.tasaAprendizaje);
     if (mapa.esPared(puesto))
         throw Excepciones_del_Juego("el puesto de un Minion guardia esta dentro de una pared");
 
@@ -125,15 +135,17 @@ void MinionGuardia::pensar(float dt, vector2 posicionMario, bool marioDormido)
         // Se queda quieto mirando hacia donde vio algo.
         mirarHacia(ultimaVista_);
         if (veAMario_) {
-            alerta_ += marioDormido ? 1.0f : dt / parametros_.tiempoAlerta;
+            // La reacción aprendida acorta el tiempo para decidir perseguirlo.
+            alerta_ += marioDormido ? 1.0f : dt / (parametros_.tiempoAlerta * factorReaccion_);
             if (alerta_ >= 1.0f) {
                 alerta_ = 1.0f;
+                registrarZona(mapa_->celdaDe(ultimaVista_));   // empieza un encuentro: ¿dónde?
                 cambiarEstado(EstadoAgente::PERSEGUIR);
                 irHacia(ultimaVista_, parametros_.velPersecucion);   // arranca en este mismo fotograma
             }
         } else {
             // Si deja de verlo, la alerta baja a la mitad de la velocidad.
-            alerta_ -= dt / (2.0f * parametros_.tiempoAlerta);
+            alerta_ -= dt / (2.0f * parametros_.tiempoAlerta * factorReaccion_);
             if (alerta_ <= 0.0f) {
                 alerta_ = 0.0f;
                 cambiarEstado(EstadoAgente::PATRULLAR);
@@ -167,6 +179,8 @@ void MinionGuardia::pensar(float dt, vector2 posicionMario, bool marioDormido)
             // Mira alrededor girando el cono de visión.
             setAnguloVision(anguloVision_ + VELOCIDAD_GIRO * dt);
             if (tiempoEnEstado_ >= parametros_.tiempoBusqueda) {
+                // Fin del encuentro: Mario se escapó. 4. APRENDE de esto.
+                aprenderDeEscape();
                 alerta_ = 0.0f;
                 cambiarEstado(EstadoAgente::PATRULLAR);
                 elegirPuntoDePatrulla();
@@ -225,12 +239,22 @@ void MinionGuardia::mirarHacia(vector2 punto)
         setAnguloVision(d.angulo());
 }
 
+// Patrullar o vigilar "según los pesos aprendidos": con probabilidad
+// pesoVigilar va a una zona donde ya vio a Mario; si no, ruta normal.
 void MinionGuardia::elegirPuntoDePatrulla()
 {
     const vector<MapaLaberinto::Celda>& libres = mapa_->celdasLibres();
     const MapaLaberinto::Celda aqui = mapa_->celdaDe(posicion_);
     const int radio = static_cast<int>(parametros_.radioPatrulla);
     hayPaso_ = false;
+
+    MapaLaberinto::Celda zona;
+    if (pesoVigilar_ > 0.0f &&
+        static_cast<float>(aleatorio() % 1000u) < pesoVigilar_ * 1000.0f &&
+        elegirZonaFrecuente(zona) && zona != aqui) {
+        destinoPatrulla_ = mapa_->centroDe(zona);
+        return;
+    }
 
     for (int intento = 0; intento < 12 && !libres.empty(); ++intento) {
         const MapaLaberinto::Celda c = libres[aleatorio() % libres.size()];
@@ -240,6 +264,57 @@ void MinionGuardia::elegirPuntoDePatrulla()
         }
     }
     destinoPatrulla_ = mapa_->centroDe(puesto_);
+}
+
+// ------------------------------------------------------------------
+// 4. APRENDIZAJE
+// ------------------------------------------------------------------
+
+// Guarda la celda donde vio a Mario. Si ya hay una zona a 1 celda o menos,
+// le sube el peso; si no, la agrega (si está lleno, reemplaza la más débil).
+void MinionGuardia::registrarZona(MapaLaberinto::Celda celda)
+{
+    for (ZonaFrecuente& z : zonas_)
+        if (distanciaManhattan(z.celda, celda) <= 1) {
+            z.peso += 1.0f;
+            return;
+        }
+    if (static_cast<int>(zonas_.size()) < MAX_ZONAS) {
+        zonas_.push_back(ZonaFrecuente{celda, 1.0f});
+        return;
+    }
+    size_t masDebil = 0;
+    for (size_t i = 1; i < zonas_.size(); ++i)
+        if (zonas_[i].peso < zonas_[masDebil].peso) masDebil = i;
+    zonas_[masDebil] = ZonaFrecuente{celda, 1.0f};
+}
+
+// Mario se escapó: cuenta el fracaso, guarda dónde lo perdió, reacciona más
+// rápido la próxima vez y vigilará más las zonas frecuentes (con límites).
+void MinionGuardia::aprenderDeEscape()
+{
+    ++escapes_;
+    registrarZona(mapa_->celdaDe(ultimaVista_));
+    const float tasa = parametros_.tasaAprendizaje;
+    factorReaccion_ *= (1.0f - REDUCCION_REACCION * tasa);
+    if (factorReaccion_ < FACTOR_REACCION_MINIMO) factorReaccion_ = FACTOR_REACCION_MINIMO;
+    pesoVigilar_ += AUMENTO_VIGILAR * tasa;
+    if (pesoVigilar_ > PESO_VIGILAR_MAXIMO) pesoVigilar_ = PESO_VIGILAR_MAXIMO;
+}
+
+// Escoge la zona con más peso que no esté demasiado lejos de su puesto
+// (así los Minions no abandonan su sector). Al elegirla, su peso se desgasta.
+bool MinionGuardia::elegirZonaFrecuente(MapaLaberinto::Celda& destino)
+{
+    const int alcance = 2 * static_cast<int>(parametros_.radioPatrulla);
+    ZonaFrecuente* mejor = nullptr;
+    for (ZonaFrecuente& z : zonas_)
+        if (distanciaManhattan(z.celda, puesto_) <= alcance && (mejor == nullptr || z.peso > mejor->peso))
+            mejor = &z;
+    if (mejor == nullptr) return false;
+    destino = mejor->celda;
+    mejor->peso *= DESGASTE_ZONA;
+    return true;
 }
 
 // Generador congruencial lineal (los mismos números que usa glibc para

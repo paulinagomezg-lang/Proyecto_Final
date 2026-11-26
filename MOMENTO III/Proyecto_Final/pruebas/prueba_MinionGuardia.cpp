@@ -1,3 +1,8 @@
+// Pruebas del MinionGuardia y su agente inteligente.
+// No tiene main(): main_pruebas.cpp llama a pruebasMinionGuardia().
+// Aquí se prueba el agente solo; el movimiento con las físicas reales se
+// prueba en prueba_NivelLaberinto.cpp.
+
 #include "MinionGuardia.h"
 #include "Excepciones_del_Juego.h"
 #include <cstdio>
@@ -201,6 +206,90 @@ void ejecutar(int& correctas, int& totales)
         verificar(casi(g.radioVision(), normal.radioVision), "al volver la luz recupera su vision");
         g.setFactorLuz(0.0f);
         verificar(g.radioVision() > 0.0f, "nunca queda con radio 0 (no lanza excepcion)");
+    }
+
+    printf("Aprendizaje (4): aprende de cada encuentro\n");
+    {
+        MapaLaberinto m("###########\n#G.......S#\n#M#########\n", "pasillo.txt");
+        const vector2 mario = m.centroDe(5, 1);
+        const vector2 escondido(-50.0f, -50.0f);
+
+        // Un encuentro completo: lo ve hasta perseguirlo, Mario se esconde y
+        // el Minion lo busca hasta rendirse. Devuelve los fotogramas que tardó
+        // en decidir perseguirlo (su tiempo de reacción).
+        auto encuentro = [&](MinionGuardia& g) {
+            int f = 0;
+            while (g.estado() != EstadoAgente::PERSEGUIR && f < 600) { g.pensar(DT, mario, false); ++f; }
+            int pasos = 0;
+            while (g.estado() != EstadoAgente::PATRULLAR && pasos < 60 * 30) { pasoIdeal(g, escondido, false); ++pasos; }
+            return f;
+        };
+
+        MinionGuardia g(m, C{1, 1}, normal, 1);
+        verificar(g.escapes() == 0 && casi(g.factorReaccion(), 1.0f) && casi(g.pesoVigilar(), 0.0f)
+                      && g.zonasFrecuentes().empty(), "empieza sin nada aprendido");
+
+        const int reaccion1 = encuentro(g);
+        verificar(g.escapes() == 1, "registro de exito/fracaso: cuenta que Mario se escapo");
+        verificar(casi(g.factorReaccion(), 0.85f), "despues de un escape reacciona 15 % mas rapido (normal)");
+        verificar(casi(g.pesoVigilar(), 0.2f), "y sube el peso de ir a vigilar zonas frecuentes");
+        bool guardoZona = false;
+        for (const ZonaFrecuente& z : g.zonasFrecuentes())
+            if (z.celda == C{5, 1} && z.peso >= 2.0f) guardoZona = true;
+        verificar(guardoZona, "guarda la zona donde vio a Mario (y le sube el peso)");
+
+        g.setPosicion(m.centroDe(1, 1));
+        g.setAnguloVision(0.0f);
+        const int reaccion2 = encuentro(g);
+        verificar(reaccion2 < reaccion1, "en el siguiente encuentro decide perseguirlo antes");
+        verificar(fabs(static_cast<float>(reaccion2) * DT - normal.tiempoAlerta * 0.85f) < 3.0f * DT,
+                  "tarda tiempoAlerta x factorReaccion (0.8 x 0.85 = 0.68 s)");
+
+        for (int i = 0; i < 12; ++i) {
+            g.setPosicion(m.centroDe(1, 1));
+            g.setAnguloVision(0.0f);
+            encuentro(g);
+        }
+        verificar(g.factorReaccion() >= MinionGuardia::FACTOR_REACCION_MINIMO - 1e-4f,
+                  "por mas que aprenda, el factor no baja del minimo (sigue siendo justo)");
+        verificar(g.pesoVigilar() <= MinionGuardia::PESO_VIGILAR_MAXIMO + 1e-4f,
+                  "y el peso de vigilar no pasa del maximo");
+        verificar(static_cast<int>(g.zonasFrecuentes().size()) <= MinionGuardia::MAX_ZONAS,
+                  "guarda como mucho MAX_ZONAS zonas (memoria acotada)");
+
+        const ParametrosGuardia pf = ParametrosGuardia::segunDificultad(NivelDificultad::FACIL);
+        const ParametrosGuardia pd = ParametrosGuardia::segunDificultad(NivelDificultad::DIFICIL);
+        MinionGuardia gf(m, C{1, 1}, pf, 1), gd(m, C{1, 1}, pd, 1);
+        encuentro(gf);
+        encuentro(gd);
+        verificar(gd.factorReaccion() < gf.factorReaccion(), "en dificil aprende mas rapido que en facil");
+    }
+    {
+        // Lo aprendido cambia la patrulla: va mas a la zona donde vio a Mario.
+        MapaLaberinto m("###############\n#.............#\n#.##.##G##.##.#\n#.............#\n#M###########S#\n", "sala.txt");
+        const C zona{2, 3};
+        MinionGuardia novato(m, C{7, 2}, normal, 5), experto(m, C{7, 2}, normal, 5);
+        // El experto vivio un encuentro en esa zona y Mario se le escapo.
+        experto.setPosicion(m.centroDe(3, 3));
+        experto.setAnguloVision(3.14159265f);
+        int f = 0;
+        while (experto.estado() != EstadoAgente::PERSEGUIR && f < 600) { experto.pensar(DT, m.centroDe(zona), false); ++f; }
+        int pasos = 0;
+        while (experto.estado() != EstadoAgente::PATRULLAR && pasos < 60 * 30) { pasoIdeal(experto, vector2(-50.0f, -50.0f), false); ++pasos; }
+        verificar(experto.escapes() == 1, "el experto ya vivio un encuentro");
+
+        int visitasNovato = 0, visitasExperto = 0;
+        bool novatoEn = false, expertoEn = false;
+        for (int i = 0; i < 60 * 120; ++i) {      // 2 minutos patrullando
+            pasoIdeal(novato, vector2(-50.0f, -50.0f), false);
+            pasoIdeal(experto, vector2(-50.0f, -50.0f), false);
+            const bool n = m.celdaDe(novato.posicion()) == zona, e = m.celdaDe(experto.posicion()) == zona;
+            if (n && !novatoEn) ++visitasNovato;
+            if (e && !expertoEn) ++visitasExperto;
+            novatoEn = n; expertoEn = e;
+        }
+        printf("     (visitas a la zona en 2 min: novato %d, experto %d)\n", visitasNovato, visitasExperto);
+        verificar(visitasExperto > visitasNovato, "el que aprendio vigila mas la zona donde vio a Mario");
     }
 
     correctas = total - fallas;
