@@ -102,7 +102,8 @@ NivelBloques::NivelBloques(const MapaNivelBloques& mapa, NivelDificultad dificul
     indiceApoyo_(-1),
     indiceRecuperando_(-1),
     caidaLibre_(false),
-    acumuladoDebilitamiento_(0.0f)
+    acumuladoDebilitamiento_(0.0f),
+    eventosDebilitamiento_(0)
 {
     // 1. Validar ANTES de crear nada con new: si algo falla, no queda nada a medias.
     if (mapa.bloques.empty())
@@ -278,12 +279,21 @@ void NivelBloques::aplicarCaidaConArrastre(Protagonista* mario)
 // bloques de tierra pierden rigidez.
 void NivelBloques::debilitarBloques(float dt)
 {
+    if (eventosDebilitamiento_ >= EVENTOS_PARA_ROMPER) return;
     acumuladoDebilitamiento_ += dt;
-    while (acumuladoDebilitamiento_ >= tiempoDebilitamiento_) {
-        acumuladoDebilitamiento_ -= tiempoDebilitamiento_;
-        for (BloqueTierra& b : bloques_)
-            if (!b.esFirme() && !b.roto())
-                b.rigidez_ = max(RIGIDEZ_MINIMA, b.rigidez_ * factorDebilitamiento_);
+    if (acumuladoDebilitamiento_ < tiempoDebilitamiento_) return;
+
+    acumuladoDebilitamiento_ -= tiempoDebilitamiento_;
+    ++eventosDebilitamiento_;
+    const bool romper = eventosDebilitamiento_ >= EVENTOS_PARA_ROMPER;
+    for (BloqueTierra& b : bloques_) {
+        if (b.esFirme() || b.roto()) continue;
+        if (romper) {
+            b.roto_ = true;
+        } else {
+            b.agrietado_ = true;
+            b.rigidez_ = max(RIGIDEZ_MINIMA, b.rigidez_ * factorDebilitamiento_);
+        }
     }
 }
 
