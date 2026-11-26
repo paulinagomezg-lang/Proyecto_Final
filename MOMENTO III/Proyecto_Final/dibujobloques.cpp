@@ -5,6 +5,7 @@
 #include "foso.h"
 #include "minionejercitocolombiano.h"
 #include "Protagonista.h"
+#include "Excepciones_del_Juego.h"
 
 #include <QPainter>
 #include <QPainterPath>
@@ -14,6 +15,7 @@
 #include <QFont>
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 using namespace std;
 
@@ -29,10 +31,7 @@ const float ALTO_VISIBLE = Y_ARRIBA - Y_ABAJO;
 const float POSICION_MARIO = 0.4f; // Mario va al 40 % del ancho (ve más hacia adelante)
 const float AVISO_DEBILITAR = 1.5f;// s antes del evento en que parpadean los bloques
 
-// Colores (los de Mario y los Minions son los mismos del laberinto).
-const QColor CIELO_ARRIBA(92, 148, 252);
-const QColor CIELO_ABAJO(170, 205, 255);
-const QColor NUBE(255, 255, 255, 220);
+// Colores (Mario y los Minions ahora son sprites).
 const QColor PASTO(70, 170, 40);
 const QColor PASTO_OSCURO(40, 110, 20);
 const QColor SUELO(150, 95, 45);
@@ -40,11 +39,6 @@ const QColor TIERRA_SANA(165, 110, 55);
 const QColor TIERRA_DEBIL(215, 185, 140);
 const QColor FOSO(35, 25, 20);
 const QColor FOSO_PARED(70, 50, 35);
-const QColor COLOR_MINION(250, 215, 40);
-const QColor CASCO(60, 95, 45);
-const QColor COLOR_MARIO(220, 40, 40);
-const QColor PIEL(240, 190, 150);
-const QColor SOMBRERO(235, 220, 170);
 const QColor PESA(70, 70, 80);
 
 float limitar(float v, float minimo, float maximo)
@@ -61,11 +55,58 @@ QColor mezclar(const QColor& a, const QColor& b, float t)
                   static_cast<int>(a.blue()  + (b.blue()  - a.blue())  * t));
 }
 
+QPixmap leerSprite(const string& nombre)
+{
+    const string ruta = ":/sprites/" + nombre + ".png";
+    QPixmap imagen(QString::fromStdString(ruta));
+    if (imagen.isNull())
+        throw Excepciones_de_Recursos(ruta, "no está en Recursos.qrc");
+    return imagen;
+}
+
+// Cuadro de la animación: quieto = 0; caminando = 1, 0, 2, 0... (8 por segundo).
+int cuadroAnimacion(bool seMueve, float tiempo)
+{
+    if (!seMueve) return 0;
+    static const int CICLO[4] = {1, 0, 2, 0};
+    return CICLO[static_cast<int>(tiempo * 8.0f) & 3];
+}
+
 } // namespace
 
 DibujoBloques::DibujoBloques()
-    : escala_(1.0f), anchoMundo_(1.0f), anchoVisible_(1.0f), camaraX_(0.0f)
+    : escala_(1.0f), anchoMundo_(1.0f), anchoVisible_(1.0f), camaraX_(0.0f),
+    fondoOriginal_(QString(":/sprites/fondo_refineria.png"))
 {
+    if (fondoOriginal_.isNull())
+        throw Excepciones_de_Recursos(":/sprites/fondo_refineria.png", "no está en Recursos.qrc");
+    cargarSprites();
+}
+
+void DibujoBloques::cargarSprites()
+{
+    for (int k = 0; k < CUADROS; ++k) {
+        marioOriginal_[0][k] = leerSprite("protagonista_derecha_" + to_string(k));
+        marioOriginal_[1][k] = leerSprite("protagonista_izquierda_" + to_string(k));
+        minionOriginal_[k] = leerSprite("enemigo_abajo_" + to_string(k));
+    }
+    capturadoOriginal_ = leerSprite("protagonista_capturado");
+}
+
+// Mario mide ALTO_MARIO; el sprite es un poco más alto porque tiene margen.
+void DibujoBloques::prepararSprites()
+{
+    const int lado = max(8, static_cast<int>(NivelBloques::ALTO_MARIO * 1.25f * escala_));
+    const int ladoPesado = static_cast<int>(lado * 1.15f);
+    const int ladoMinion = max(8, static_cast<int>(0.35f * 2.0f * 1.5f * escala_));
+    for (int k = 0; k < CUADROS; ++k) {
+        for (int d = 0; d < 2; ++d) {
+            mario_[d][k] = marioOriginal_[d][k].scaled(lado, lado, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+            marioPesado_[d][k] = marioOriginal_[d][k].scaled(ladoPesado, ladoPesado, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        }
+        minion_[k] = minionOriginal_[k].scaled(ladoMinion, ladoMinion, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+    }
+    capturado_ = capturadoOriginal_.scaled(lado, lado, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 }
 
 // ------------------------------------------------------------------
@@ -82,6 +123,11 @@ void DibujoBloques::prepararEscala(const NivelBloques& nivel, const QRect& area)
     for (const BloqueTierra& b : nivel.bloques())
         anchoMundo_ = max(anchoMundo_, b.xFin());
     area_ = area;
+
+    // Fondo al alto del área (se hace aquí, una vez, y no en cada fotograma).
+    fondo_ = fondoOriginal_.scaled(fondoOriginal_.width() * area.height() / fondoOriginal_.height(),
+                                   area.height(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    prepararSprites();
 }
 
 // La cámara sigue a Mario, pero no se sale del mundo.
@@ -127,7 +173,7 @@ void DibujoBloques::dibujar(QPainter& p, const NivelBloques& nivel, const QRect&
     dibujarCielo(p, area);
     p.setRenderHint(QPainter::Antialiasing, true);
     dibujarFosos(p, nivel);
-    dibujarMinions(p, nivel);
+    dibujarMinions(p, nivel, tiempo);
     dibujarBloques(p, nivel, tiempo);
     dibujarMeta(p, nivel);
     dibujarItems(p, nivel);
@@ -139,26 +185,15 @@ void DibujoBloques::dibujar(QPainter& p, const NivelBloques& nivel, const QRect&
 // (parallax: parece que están lejos).
 void DibujoBloques::dibujarCielo(QPainter& p, const QRect& area) const
 {
-    QLinearGradient cielo(area.topLeft(), area.bottomLeft());
-    cielo.setColorAt(0.0, CIELO_ARRIBA);
-    cielo.setColorAt(1.0, CIELO_ABAJO);
-    p.fillRect(area, cielo);
-
-    p.setRenderHint(QPainter::Antialiasing, true);
-    p.setPen(Qt::NoPen);
-    p.setBrush(NUBE);
-    const float separacion = 9.0f;                     // m entre nubes
-    const float lejania = 0.3f;                        // se mueven al 30 %
-    const float desplazamiento = camaraX_ * lejania;
-    const int primera = static_cast<int>(floor(desplazamiento / separacion)) - 1;
-    for (int i = primera; i < primera + static_cast<int>(anchoVisible_ / separacion) + 3; ++i) {
-        const float xNube = (i * separacion - desplazamiento) * escala_ + area.x();
-        const float yNube = aPixelY(i % 2 == 0 ? 4.4f : 3.6f);
-        const float s = escala_ * 0.45f;
-        p.drawEllipse(QPointF(xNube - s, yNube + 0.2 * s), s * 0.8, s * 0.6);
-        p.drawEllipse(QPointF(xNube, yNube - 0.2 * s), s, s * 0.8);
-        p.drawEllipse(QPointF(xNube + s, yNube + 0.2 * s), s * 0.8, s * 0.6);
-    }
+    // Refinería destruida que se repite a lo ancho y se mueve al 30 % de la
+    // cámara (parallax: parece que está lejos).
+    const int ancho = fondo_.width();
+    if (ancho <= 0) return;
+    const float lejania = 0.3f;
+    int desplazamiento = static_cast<int>(camaraX_ * lejania * escala_) % ancho;
+    if (desplazamiento < 0) desplazamiento += ancho;
+    for (int x = area.x() - desplazamiento; x < area.right() + 1; x += ancho)
+        p.drawPixmap(x, area.y(), fondo_);
 }
 
 // ------------------------------------------------------------------
@@ -191,7 +226,7 @@ void DibujoBloques::dibujarFosos(QPainter& p, const NivelBloques& nivel) const
  * Ángulos: igual que en DibujoLaberinto, en Qt 0° apunta a la derecha y
  * los positivos giran antihorario, como en la lógica.
  */
-void DibujoBloques::dibujarMinions(QPainter& p, const NivelBloques& nivel) const
+void DibujoBloques::dibujarMinions(QPainter& p, const NivelBloques& nivel, float tiempo) const
 {
     const float radioCuerpo = 0.35f * escala_;
     for (const MinionEjercitoColombiano* m : nivel.minions()) {
@@ -211,16 +246,11 @@ void DibujoBloques::dibujarMinions(QPainter& p, const NivelBloques& nivel) const
         p.setBrush(QColor(255, 60, 40, 45));
         p.drawPath(zona);
 
-        // Cuerpo, casco y ojos mirando hacia arriba.
-        p.setPen(QPen(Qt::black, 1.5));
-        p.setBrush(COLOR_MINION);
-        p.drawEllipse(c, radioCuerpo, radioCuerpo);
-        p.setBrush(CASCO);
-        p.drawChord(QRectF(c.x() - radioCuerpo, c.y() - radioCuerpo, 2 * radioCuerpo, 2 * radioCuerpo), 0, 180 * 16);
-        p.setPen(Qt::NoPen);
-        p.setBrush(Qt::black);
-        p.drawEllipse(QPointF(c.x() - 0.35 * radioCuerpo, c.y() + 0.15 * radioCuerpo), 0.12 * radioCuerpo, 0.12 * radioCuerpo);
-        p.drawEllipse(QPointF(c.x() + 0.35 * radioCuerpo, c.y() + 0.15 * radioCuerpo), 0.12 * radioCuerpo, 0.12 * radioCuerpo);
+        // Cuerpo: sprite de frente con su animación de espera (se mueve un
+        // poco). Cada Minion va desfasado para que no se muevan todos iguales.
+        const int cuadro = cuadroAnimacion(true, tiempo * 0.5f + pos.x * 0.37f);
+        const QPixmap& s = minion_[cuadro];
+        p.drawPixmap(QPointF(c.x() - s.width() * 0.5, c.y() + radioCuerpo - s.height()), s);
     }
 }
 
@@ -367,35 +397,17 @@ void DibujoBloques::dibujarMario(QPainter& p, const NivelBloques& nivel, float t
     const Protagonista& m = *nivel.protagonista();
     const QPointF pies = aPixel(m.posicion());
     const float alto = NivelBloques::ALTO_MARIO * escala_;
-    const float medio = NivelBloques::MEDIO_ANCHO_MARIO * escala_ * (m.esPesado() ? 1.15f : 1.0f);
-    const float r = 0.2f * escala_;                    // radio de la cabeza
-    const float altoCuerpo = alto - 2.0f * r;
+    const float r = 0.2f * escala_;                    // medida para ubicar la barra de la pesa
 
-    // Cuerpo
-    p.setPen(QPen(Qt::black, m.esPesado() ? 2.5 : 1.5));
-    p.setBrush(m.esPesado() ? COLOR_MARIO.darker(160) : COLOR_MARIO);
-    p.drawRoundedRect(QRectF(pies.x() - medio, pies.y() - altoCuerpo, 2 * medio, altoCuerpo), 4, 4);
-
-    // Cabeza
-    const QPointF cabeza(pies.x(), pies.y() - altoCuerpo - r);
-    p.setBrush(PIEL);
-    p.drawEllipse(cabeza, r, r);
-
-    // Ojo hacia donde mira (en el nivel 1 solo derecha o izquierda).
-    const float lado = (m.mirada() == Mirada::IZQUIERDA) ? -1.0f : 1.0f;
-    p.setPen(Qt::NoPen);
-    p.setBrush(Qt::black);
-    p.drawEllipse(QPointF(cabeza.x() + lado * 0.45 * r, cabeza.y()), 0.18 * r, 0.18 * r);
-
-    // Sombrero: ala ancha y copa con dos franjas.
-    p.setPen(QPen(Qt::black, 1));
-    p.setBrush(SOMBRERO);
-    p.drawEllipse(QPointF(cabeza.x(), cabeza.y() - 0.75 * r), 1.6 * r, 0.35 * r);
-    const QRectF copa(cabeza.x() - 0.7 * r, cabeza.y() - 1.6 * r, 1.4 * r, 0.85 * r);
-    p.drawRect(copa);
-    p.setPen(QPen(Qt::black, 2));
-    p.drawLine(QPointF(copa.left(), copa.top() + 0.3 * copa.height()), QPointF(copa.right(), copa.top() + 0.3 * copa.height()));
-    p.drawLine(QPointF(copa.left(), copa.top() + 0.65 * copa.height()), QPointF(copa.right(), copa.top() + 0.65 * copa.height()));
+    // Sprite: derecha o izquierda según la mirada; camina si se mueve en el
+    // suelo y usa el cuadro de carrera (2) en el aire. Con la pesa, más grande.
+    const int d = (m.mirada() == Mirada::IZQUIERDA) ? 1 : 0;
+    const bool enElAire = nivel.indiceBloqueApoyo() < 0;
+    const int cuadro = enElAire ? 2 : cuadroAnimacion(fabs(m.velocidad().x) > 0.1f, tiempo);
+    const QPixmap& s = m.estaCapturado() ? capturado_
+                                         : (m.esPesado() ? marioPesado_[d][cuadro] : mario_[d][cuadro]);
+    p.drawPixmap(QPointF(pies.x() - s.width() * 0.5, pies.y() - s.height()), s);
+    const QPointF cabeza(pies.x(), pies.y() - alto);   // para la barra de la pesa
 
     // Barra del poder pesado.
     if (m.esPesado() && m.duracionPesado() > 0.0f) {
@@ -410,11 +422,4 @@ void DibujoBloques::dibujarMario(QPainter& p, const NivelBloques& nivel, float t
         p.drawRect(QRectF(marco.left(), marco.top(), marco.width() * fraccion, marco.height()));
     }
 
-    if (m.estaCapturado()) {
-        const QPointF centro(pies.x(), pies.y() - alto * 0.5f);
-        const float s = alto * 0.5f;
-        p.setPen(QPen(Qt::white, 3));
-        p.drawLine(centro + QPointF(-s, -s), centro + QPointF(s, s));
-        p.drawLine(centro + QPointF(-s, s), centro + QPointF(s, -s));
-    }
 }

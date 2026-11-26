@@ -23,8 +23,17 @@ struct ParametrosGuardia
     float tiempoBusqueda;    // s mirando alrededor en BUSCAR
     float radioOido;         // m: si Mario está dormido, lo oye roncar (sin cono)
     float radioPatrulla;     // celdas (distancia Manhattan) alrededor de su puesto
+    float tasaAprendizaje = 1.0f;  // qué tanto cambia con cada encuentro (más en difícil)
 
     static ParametrosGuardia segunDificultad(NivelDificultad dificultad);
+};
+
+// 4. APRENDIZAJE: una zona donde el agente ha visto a Mario y qué tanto
+// pesa (sube cada vez que lo vuelve a ver cerca de ahí).
+struct ZonaFrecuente
+{
+    MapaLaberinto::Celda celda;
+    float peso;
 };
 
 class MinionGuardia : public Enemigo
@@ -56,6 +65,17 @@ public:
     const ParametrosGuardia& parametros() const { return parametros_; }
     MapaLaberinto::Celda puesto() const { return puesto_; }
 
+    // Aprendizaje (consultas para la interfaz y las pruebas)
+    int escapes() const { return escapes_; }                 // encuentros que Mario ganó
+    float factorReaccion() const { return factorReaccion_; } // 1 = normal; menos = reacciona antes
+    float pesoVigilar() const { return pesoVigilar_; }       // prob. de ir a una zona frecuente
+    const vector<ZonaFrecuente>& zonasFrecuentes() const { return zonas_; }
+
+    // Mínimo al que puede bajar el factor de reacción (no se vuelve imposible).
+    static constexpr float FACTOR_REACCION_MINIMO = 0.5f;
+    static constexpr float PESO_VIGILAR_MAXIMO = 0.7f;
+    static const int MAX_ZONAS = 6;
+
 private:
     // Percepción
     bool percibe(vector2 posicionMario, bool marioDormido) const;
@@ -66,6 +86,11 @@ private:
     void elegirPuntoDePatrulla();
     void cambiarEstado(EstadoAgente nuevo);
     unsigned aleatorio();   // generador congruencial lineal (sin <random>)
+
+    // 4. Aprendizaje
+    void registrarZona(MapaLaberinto::Celda celda);   // guarda dónde vio a Mario
+    void aprenderDeEscape();                           // al terminar un encuentro sin captura
+    bool elegirZonaFrecuente(MapaLaberinto::Celda& destino);
 
     const MapaLaberinto* mapa_;   // no es dueño
     ParametrosGuardia parametros_;
@@ -88,6 +113,12 @@ private:
 
     vector2 velocidadDeseada_;
     unsigned semilla_;
+
+    // Lo aprendido (se conserva durante todo el intento del nivel).
+    vector<ZonaFrecuente> zonas_;   // capacidad reservada una vez (MAX_ZONAS)
+    int escapes_;
+    float factorReaccion_;          // multiplica tiempoAlerta
+    float pesoVigilar_;             // 0 = solo ruta normal; sube con cada escape
 };
 
 #endif // MINIONGUARDIA_H

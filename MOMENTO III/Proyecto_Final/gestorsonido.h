@@ -16,6 +16,11 @@ public:
     void cargar();
     void actualizar(const gestorlogico& juego);
 
+    // Efectos del menú: los llama VistaJuego cuando pasa algo en el menú.
+    void sonarMover();     // cambia la opción resaltada
+    void sonarElegir();    // acepta una opción
+    void sonarAtras();     // vuelve a la pantalla anterior
+
 private:
     void prepararEfecto(QSoundEffect& efecto, const char* ruta, float volumen);
     void reiniciarSeguimiento(const Nivel* nivel);
@@ -28,6 +33,10 @@ private:
     QSoundEffect musicaLaberinto_;
     QSoundEffect alerta_;
     QSoundEffect apagon_;
+    QSoundEffect musicaMenu_;
+    QSoundEffect menuMover_;
+    QSoundEffect menuElegir_;
+    QSoundEffect menuAtras_;
 
     // Lo que había en el fotograma anterior.
     const Nivel* nivelAnterior_;   // sin dueño: solo para comparar

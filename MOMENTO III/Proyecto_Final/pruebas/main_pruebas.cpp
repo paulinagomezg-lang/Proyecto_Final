@@ -5,7 +5,36 @@
 //   3. Agregar el archivo (y el .cpp de la clase) al SOURCES de pruebas.pro.
 
 #include <cstdio>
+
+// En Windows las pruebas abren SU PROPIA consola clásica (así se ven igual
+// desde Qt Creator, con doble clic o desde la terminal, sin depender de la
+// configuración de Qt Creator). Va solo en este archivo para que <windows.h>
+// no choque con nada de las clases del juego.
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX            // <windows.h> define min y max como macros: así no
+#include <windows.h>        // chocan con std::min / std::max
+#endif
+
 using namespace std;
+
+namespace {
+
+// Abre una consola nueva y manda ahí printf y getchar.
+void abrirConsola()
+{
+#ifdef _WIN32
+    FreeConsole();                       // se suelta de la terminal de Qt Creator (si había)
+    AllocConsole();                      // y abre una ventana de consola propia
+    SetConsoleOutputCP(CP_UTF8);         // tildes y ñ se ven bien
+    SetConsoleTitleA("Pruebas de la logica del juego");
+    freopen("CONOUT$", "w", stdout);
+    freopen("CONIN$", "r", stdin);
+#endif
+    setvbuf(stdout, nullptr, _IONBF, 0); // cada printf sale de inmediato
+}
+
+} // namespace
 
 void pruebasVector2(int& correctas, int& totales);
 void pruebasEnergiaCarrera(int& correctas, int& totales);
@@ -17,6 +46,7 @@ void pruebasMapaLaberinto(int& correctas, int& totales);
 void pruebasMinionGuardia(int& correctas, int& totales);
 void pruebasBloqueMovil(int& correctas, int& totales);
 void pruebasNivelLaberinto(int& correctas, int& totales);
+void pruebasNivelBloques(int& correctas, int& totales);
 
 struct Suite
 {
@@ -33,6 +63,8 @@ struct Resultado
 
 int main()
 {
+    abrirConsola();
+
     const Suite suites[] = {
                              {"vector2",             pruebasVector2},
                              {"energiacarrera",      pruebasEnergiaCarrera},
@@ -44,6 +76,7 @@ int main()
                              {"MinionGuardia",       pruebasMinionGuardia},
                              {"BloqueMovil",         pruebasBloqueMovil},
                              {"NivelLaberinto",      pruebasNivelLaberinto},
+                             {"NivelBloques",        pruebasNivelBloques},
                              };
     // Cantidad de suites, calculada por el compilador (no hay que cambiarla
     // al agregar una prueba nueva).
@@ -81,5 +114,9 @@ int main()
     printf("\n====================================================\n");
     printf("TOTAL: %d de %d pruebas correctas\n", correctasTotal, totalGeneral);
     printf("====================================================\n");
+
+    // La consola queda abierta hasta que se presione Enter.
+    printf("\nPresiona Enter para cerrar...\n");
+    getchar();
     return correctasTotal == totalGeneral ? 0 : 1;
 }

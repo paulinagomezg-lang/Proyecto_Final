@@ -28,21 +28,21 @@ const int MS_POR_FOTOGRAMA = 16;   // ~60 fotogramas por segundo
 const int ALTO_HUD = 52;           // barra de arriba (vidas, energía...)
 const int MARGEN = 8;
 
-// ---- Textos de la portada (aquí se cambian) ----
+// Textos de la portada (aquí se cambian)
 const char* const TITULO_LINEA_1 = "LUCHA SINDICAL";
 const char* const TITULO_LINEA_2 = "TROPICAL OIL COMPANY";
 const char* const SUBTITULO = "UdeA · Informática II · 2026-2";
 const char* const INTEGRANTE_1 = "Paulina Gómez García";
 const char* const INTEGRANTE_2 = "Pablo Andrés Carrillo Yepes";
 
-// ---- Medidas del panel del menú ----
+//  Medidas del panel del menú
 const int ANCHO_PANEL = 330;
 const int ALTO_BOTON = 44;
 const int SEPARACION_BOTON = 12;
 const int ALTO_BARRA = 46;         // barra de abajo con el título y la X
 const int ALTO_LINEA = 24;         // texto de OPCIONES y CRÉDITOS
 
-// ---- Colores de la portada (estilo retro) ----
+// Colores de la portada (estilo retro)
 const QColor CIELO(92, 148, 252);
 const QColor LADRILLO(200, 76, 12);
 const QColor LADRILLO_CLARO(252, 160, 68);
@@ -52,7 +52,7 @@ const QColor COLINA_BORDE(0, 90, 0);
 const QColor ARBUSTO(128, 208, 16);
 const QColor CREMA(255, 226, 160);
 
-// ---- Colores del panel (estilo botones de juego) ----
+//  Colores del panel (estilo botones de juego)
 const QColor PANEL_ARRIBA(120, 140, 255);
 const QColor PANEL_ABAJO(95, 70, 210);
 const QColor AZUL_OSCURO(32, 30, 84);
@@ -61,7 +61,7 @@ const QColor BOTON_GRIS(205, 208, 222);
 const QColor BOTON_ELEGIDO_CLARO(255, 240, 160);
 const QColor BOTON_ELEGIDO(255, 205, 60);
 
-// Fuente de letras de ancho fijo, en negrita (aspecto retro).
+// Fuente de letras de ancho fijo, en negrita (aspecto retro)
 QFont fuenteRetro(int pixeles, bool negrita = true)
 {
     QFont f("Courier New");
@@ -71,7 +71,7 @@ QFont fuenteRetro(int pixeles, bool negrita = true)
     return f;
 }
 
-// Texto con sombra (primero la sombra corrida, luego el texto).
+// Texto con sombra (primero la sombra corrida, luego el texto)
 void textoConSombra(QPainter& p, const QRect& r, int alineacion, const QString& t,
                     const QColor& color, const QColor& sombra, int corrimiento)
 {
@@ -93,9 +93,9 @@ QString nombreDificultad(NivelDificultad d)
 
 } // namespace
 
-// ------------------------------------------------------------------
+
 // Construcción
-// ------------------------------------------------------------------
+
 
 VistaJuego::VistaJuego(QWidget* parent)
     : QWidget(parent),
@@ -123,10 +123,9 @@ VistaJuego::VistaJuego(QWidget* parent)
     relojTotal_.start();
 }
 
-/*
- * Llama a una acción de gestorlogico que puede lanzar una excepción
- * (crear un nivel lee el mapa: puede faltar el archivo o estar mal).
- */
+
+//Llama a una acción de gestorlogico que puede lanzar una excepción (crear un nivel lee el mapa: puede faltar el archivo o estar mal)
+
 template <typename Accion>
 void VistaJuego::ejecutarSeguro(Accion accion)
 {
@@ -143,15 +142,12 @@ void VistaJuego::ejecutarSeguro(Accion accion)
     }
 }
 
-// ------------------------------------------------------------------
 // Ciclo del juego
-// ------------------------------------------------------------------
 
-/*
- * Cada ~16 ms: mide cuánto tiempo pasó de verdad (dt), avanza la lógica y
- * pide redibujar. gestorlogico ya recorta un dt muy grande (DT_MAXIMO) y
- * no hace nada si el juego no está en JUGANDO (menú, pausa...).
- */
+
+//Cada ~16 ms (controlador de actualización por fotogramas de tu juego): mide cuánto tiempo pasó de verdad (dt), avanza la lógica y pide redibujar. gestorlogico ya recorta un dt muy grande (DT_MAXIMO) y
+//no hace nada si el juego no está en JUGANDO (menú, pausa...)
+
 void VistaJuego::tick()
 {
     const float dt = static_cast<float>(reloj_.nsecsElapsed()) * 1e-9f;
@@ -161,9 +157,8 @@ void VistaJuego::tick()
     update();   // Qt llamará a paintEvent()
 }
 
-// ------------------------------------------------------------------
 // Teclado durante la partida
-// ------------------------------------------------------------------
+
 
 // Marca una tecla de movimiento como presionada o suelta.
 // Devuelve false si la tecla no es de movimiento.
@@ -179,12 +174,9 @@ bool VistaJuego::cambiarTecla(int tecla, bool presionada)
     }
 }
 
-/*
- * Le pasa a Mario la dirección según las teclas presionadas. Se llama
- * solo cuando cambia una tecla (no en cada fotograma): Protagonista
- * normaliza la dirección ahí, así que el ciclo del juego no hace raíces.
- * En la lógica y crece hacia ARRIBA: W / flecha arriba = +y.
- */
+//Le pasa a Mario la dirección según las teclas presionadas. Se llama solo cuando cambia una tecla (no en cada fotograma): Protagonista normaliza la dirección ahí, así que el ciclo del juego no hace raíces.
+//En la lógica y crece hacia ARRIBA: W / flecha arriba = +y
+
 void VistaJuego::enviarEntrada()
 {
     Nivel* nivel = juego_.nivelactual();
@@ -208,7 +200,7 @@ void VistaJuego::keyPressEvent(QKeyEvent* evento)
     }
     const int tecla = evento->key();
 
-    // En el menú, las flechas y Enter son del menú.
+    // En el menú, las flechas y Enter son del menú
     if (juego_.estado() == EstadoJuego::MENU) {
         if (manejarTeclaMenu(tecla)) update();
         else QWidget::keyPressEvent(evento);
@@ -258,8 +250,7 @@ void VistaJuego::keyReleaseEvent(QKeyEvent* evento)
         QWidget::keyReleaseEvent(evento);
 }
 
-// Si la ventana pierde el foco (por ejemplo, Alt+Tab), las teclas se
-// sueltan sin que llegue el evento: se sueltan todas y se pausa.
+// Si la ventana pierde el foco (por ejemplo, Alt+Tab), las teclas se sueltan sin que llegue el evento: se sueltan todas y se pausa.
 void VistaJuego::focusOutEvent(QFocusEvent* evento)
 {
     soltarTodo();
@@ -268,7 +259,7 @@ void VistaJuego::focusOutEvent(QFocusEvent* evento)
     QWidget::focusOutEvent(evento);
 }
 
-// Enter durante la partida: hace lo que corresponde según el estado.
+// Enter durante la partida: hace lo que corresponde según el estado
 void VistaJuego::accionPrincipal()
 {
     switch (juego_.estado()) {
@@ -289,8 +280,7 @@ void VistaJuego::accionPrincipal()
     case EstadoJuego::JUGANDO:
         break;
     }
-    // El Mario nuevo recibe las teclas que ya están presionadas, y el
-    // primer dt no cuenta el tiempo que tardó en cargar el nivel.
+    // El Mario nuevo recibe las teclas que ya están presionadas, y el primer dt no cuenta el tiempo que tardó en cargar el nivel
     enviarEntrada();
     reloj_.restart();
 }
@@ -303,7 +293,7 @@ void VistaJuego::irAPantalla(PantallaMenu pantalla, int opcion)
     opcionMenu_ = opcion;
 }
 
-// Textos de los botones de la pantalla actual. Devuelve cuántos hay.
+// Textos de los botones de la pantalla actual. Devuelve cuántos hay
 int VistaJuego::etiquetasMenu(QString* etiquetas) const
 {
     switch (pantalla_) {
@@ -371,18 +361,21 @@ QString VistaJuego::tituloPantalla() const
     return "MENÚ";
 }
 
-/*
- * Qué hace cada botón:
- *   PRINCIPAL:  JUGAR o NIVELES -> NIVELES;  OPCIONES;  CRÉDITOS
- *   NIVELES:    un nivel -> DIFICULTAD;  VOLVER
- *   DIFICULTAD: fácil/normal/difícil -> empieza el nivel elegido;  VOLVER
- */
+
+//Qué hace cada botón:
+//PRINCIPAL:  JUGAR o NIVELES -> NIVELES;  OPCIONES;  CRÉDITOS
+//NIVELES:    un nivel -> DIFICULTAD;  VOLVER
+//DIFICULTAD: fácil/normal/difícil -> empieza el nivel elegido;  VOLVER
+
 void VistaJuego::activarOpcion(int opcion)
 {
     QString etiquetas[MAX_BOTONES];
     const int n = etiquetasMenu(etiquetas);
     if (opcion < 0 || opcion >= n) return;
     const bool esVolver = (opcion == n - 1) && pantalla_ != PantallaMenu::PRINCIPAL;
+    // "Volver" (y salir de Opciones/Créditos) suena en atrasMenu()
+    if (!esVolver && pantalla_ != PantallaMenu::OPCIONES && pantalla_ != PantallaMenu::CREDITOS)
+        sonido_.sonarElegir();
 
     switch (pantalla_) {
     case PantallaMenu::PRINCIPAL:
@@ -396,7 +389,7 @@ void VistaJuego::activarOpcion(int opcion)
             atrasMenu();
         } else {
             nivelElegido_ = opcion;
-            // Empieza resaltada la dificultad que ya estaba elegida.
+            // Empieza resaltada la dificultad que ya estaba elegida
             irAPantalla(PantallaMenu::DIFICULTAD, static_cast<int>(juego_.dificultad()));
         }
         break;
@@ -420,9 +413,10 @@ void VistaJuego::activarOpcion(int opcion)
     }
 }
 
-// Esc o la X: vuelve a la pantalla anterior; en la principal, cierra el juego.
+// Esc o la X: vuelve a la pantalla anterior; en la principal, cierra el juego
 void VistaJuego::atrasMenu()
 {
+    sonido_.sonarAtras();
     switch (pantalla_) {
     case PantallaMenu::PRINCIPAL:  window()->close(); break;
     case PantallaMenu::NIVELES:    irAPantalla(PantallaMenu::PRINCIPAL, 0); break;
@@ -432,7 +426,7 @@ void VistaJuego::atrasMenu()
     }
 }
 
-// Flechas (o W/S) para elegir, Enter o Espacio para aceptar, Esc para atrás.
+// Flechas (o W/S) para elegir, Enter o Espacio para aceptar, Esc para atrás
 bool VistaJuego::manejarTeclaMenu(int tecla)
 {
     QString etiquetas[MAX_BOTONES];
@@ -440,9 +434,11 @@ bool VistaJuego::manejarTeclaMenu(int tecla)
     switch (tecla) {
     case Qt::Key_Up: case Qt::Key_W:
         opcionMenu_ = (opcionMenu_ + n - 1) % n;
+        sonido_.sonarMover();
         return true;
     case Qt::Key_Down: case Qt::Key_S:
         opcionMenu_ = (opcionMenu_ + 1) % n;
+        sonido_.sonarMover();
         return true;
     case Qt::Key_Return: case Qt::Key_Enter: case Qt::Key_Space:
         activarOpcion(opcionMenu_);
@@ -455,7 +451,7 @@ bool VistaJuego::manejarTeclaMenu(int tecla)
     }
 }
 
-// Ratón: resalta el botón que está debajo.
+// Ratón: resalta el botón que está debajo
 void VistaJuego::mouseMoveEvent(QMouseEvent* evento)
 {
     if (juego_.estado() != EstadoJuego::MENU) return;
@@ -464,11 +460,12 @@ void VistaJuego::mouseMoveEvent(QMouseEvent* evento)
     for (int i = 0; i < d.numBotones; ++i)
         if (d.botones[i].contains(punto) && opcionMenu_ != i) {
             opcionMenu_ = i;
+            sonido_.sonarMover();   // solo al pasar a otro botón, no en cada movimiento
             update();
         }
 }
 
-// Ratón: clic en un botón lo activa; clic en la X es "atrás".
+// Ratón: clic en un botón lo activa; clic en la X es "atrás"
 void VistaJuego::mousePressEvent(QMouseEvent* evento)
 {
     if (juego_.estado() != EstadoJuego::MENU || evento->button() != Qt::LeftButton) {
@@ -490,21 +487,19 @@ void VistaJuego::mousePressEvent(QMouseEvent* evento)
     update();
 }
 
-// ------------------------------------------------------------------
-// Menú: dibujo
-// ------------------------------------------------------------------
 
-// Placa del título: arriba y centrada.
+// Menú: dibujo
+
+
+// Placa del título: arriba y centrada
 QRect VistaJuego::rectPlaca() const
 {
     const int pw = qMin(560, width() - 80);
     return QRect((width() - pw) / 2, static_cast<int>(height() * 0.04), pw, 150);
 }
 
-/*
- * Calcula dónde va cada parte del panel. Lo usan dibujarMenu() y el ratón,
- * así lo que se ve y lo que se toca siempre coinciden.
- */
+//Calcula dónde va cada parte del panel. Lo usan dibujarMenu() y el ratón, así lo que se ve y lo que se toca siempre coinciden
+
 VistaJuego::DisenoMenu VistaJuego::calcularDiseno() const
 {
     DisenoMenu d;
@@ -542,7 +537,7 @@ void VistaJuego::prepararFondoMenu()
     const int lado = 32;                   // tamaño de un ladrillo
     const int piso = h - 2 * lado;
 
-    // Nubes: tres círculos blancos cada una.
+    // Nubes: tres círculos blancos cada una
     p.setPen(Qt::NoPen);
     p.setBrush(Qt::white);
     const double nubes[3][3] = {{0.12, 0.30, 1.0}, {0.86, 0.26, 1.2}, {0.80, 0.55, 0.8}};
@@ -553,7 +548,7 @@ void VistaJuego::prepararFondoMenu()
         p.drawEllipse(QPointF(cx + 36 * s, cy + 6 * s), 26 * s, 26 * s);
     }
 
-    // Colinas (medio óvalo que sale del piso) y arbustos.
+    // Colinas (medio óvalo que sale del piso) y arbustos
     p.setPen(QPen(COLINA_BORDE, 3));
     p.setBrush(COLINA);
     p.drawEllipse(QPointF(0.12 * w, piso), 170.0, 160.0);
@@ -566,7 +561,7 @@ void VistaJuego::prepararFondoMenu()
         p.drawEllipse(QPointF(cx + 30, piso - 18), 22.0, 22.0);
     }
 
-    // Piso de ladrillos: dos filas, la segunda corrida medio ladrillo.
+    // Piso de ladrillos: dos filas, la segunda corrida medio ladrillo
     p.setRenderHint(QPainter::Antialiasing, false);
     p.fillRect(QRect(0, piso, w, h - piso), LADRILLO);
     for (int fila = 0; fila < 2; ++fila) {
@@ -582,7 +577,7 @@ void VistaJuego::prepararFondoMenu()
         }
     }
 
-    // Placa del título, con sombra, borde, brillo y remaches.
+    // Placa del título, con sombra, borde, brillo y remaches
     p.setRenderHint(QPainter::Antialiasing, true);
     const QRect placa = rectPlaca();
     p.setPen(Qt::NoPen);
@@ -613,11 +608,9 @@ void VistaJuego::prepararFondoMenu()
     p.drawText(QRect(0, placa.bottom() + 8, w, 26), Qt::AlignCenter, QString::fromUtf8(SUBTITULO));
 }
 
-/*
- * Panel del menú: fondo morado-azul con borde oscuro, botones claros con
- * remaches (el elegido en amarillo), y abajo una barra con el nombre de la
- * pantalla y una X (atrás, o salir en la principal).
- */
+
+//Panel del menú: fondo morado-azul con borde oscuro, botones claros con remaches (el elegido en amarillo), y abajo una barra con el nombre de la pantalla y una X (atrás, o salir en la principal).
+
 void VistaJuego::dibujarMenu(QPainter& p)
 {
     if (fondoMenu_.size() != size())       // primera vez o cambió el tamaño
@@ -643,7 +636,7 @@ void VistaJuego::dibujarMenu(QPainter& p)
     p.setBrush(degradado);
     p.drawRoundedRect(d.panel, 18, 18);
 
-    // Texto (OPCIONES y CRÉDITOS): la primera línea como título.
+    // Texto (OPCIONES y CRÉDITOS): la primera línea como título
     for (int i = 0; i < numLineas; ++i) {
         p.setFont(fuenteRetro(i == 0 ? 18 : 15, i == 0));
         textoConSombra(p, QRect(d.zonaTexto.left(), d.zonaTexto.top() + i * ALTO_LINEA, d.zonaTexto.width(), ALTO_LINEA),
@@ -672,7 +665,7 @@ void VistaJuego::dibujarMenu(QPainter& p)
         p.drawText(b, Qt::AlignCenter, etiquetas[i]);
     }
 
-    // Barra de abajo con el nombre de la pantalla y la X.
+    // Barra de abajo con el nombre de la pantalla y la X
     p.setPen(Qt::NoPen);
     p.setBrush(AZUL_OSCURO);
     p.drawRoundedRect(d.barraInferior, 14, 14);
@@ -697,9 +690,8 @@ void VistaJuego::dibujarMenu(QPainter& p)
     p.setRenderHint(QPainter::Antialiasing, false);
 }
 
-// ------------------------------------------------------------------
+
 // Dibujo del juego
-// ------------------------------------------------------------------
 
 void VistaJuego::paintEvent(QPaintEvent*)
 {
@@ -748,15 +740,10 @@ void VistaJuego::paintEvent(QPaintEvent*)
     }
 }
 
-// ------------------------------------------------------------------
-// Barra de arriba (HUD)
-// ------------------------------------------------------------------
 
-/*
- * Rehace los textos de la barra SOLO si cambió lo que muestran (el nivel,
- * la dificultad o el segundo del reloj). Así, en un segundo de juego se
- * arma el texto del tiempo una vez y no 60.
- */
+// Barra de arriba (HUD (Heads-Up Display))
+//Rehace los textos de la barra SOLO si cambió lo que muestran (el nivel, la dificultad o el segundo del reloj). Así, en un segundo de juego se arma el texto del tiempo una vez y no 60.
+
 void VistaJuego::actualizarTextosHud()
 {
     const int nivel = juego_.indicenivelactual();
@@ -819,14 +806,12 @@ void VistaJuego::dibujarBarra(QPainter& p, const QRect& marco, float fraccion,
     p.fillRect(QRect(marco.left() + 1, marco.top() + 1, lleno, marco.height() - 1), color);
 }
 
-/*
- * Barra de arriba:
- *   izquierda: corazones (vidas), nivel y dificultad, y el tiempo del nivel
- *   centro:    el aviso más importante del momento:
- *              ¡TE VIERON! (te persiguen) > "?" (sospechan) > apagón
- *   derecha:   energía para correr y, debajo, la barra de sueño
- *              (laberinto) o la del poder pesado (cuando lo tiene)
- */
+
+//BARRA DE ARRIBA
+//izquierda: corazones (vidas), nivel y dificultad, y el tiempo del nivel
+//centro: el aviso más importante del momento: ¡TE VIERON! (te persiguen) > "?" (sospechan) > apagón
+//derecha: energía para correr y, debajo, la barra de sueño (laberinto) o la del poder pesado (cuando lo tiene)
+
 void VistaJuego::dibujarHud(QPainter& p, const QRect& barra)
 {
     actualizarTextosHud();

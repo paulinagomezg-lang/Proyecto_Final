@@ -25,11 +25,15 @@ const char* const RUTA_VICTORIA = ":/sonidos/victoria.wav";
 const char* const RUTA_MUSICA_LABERINTO = ":/sonidos/musica_laberinto.wav";
 const char* const RUTA_ALERTA   = ":/sonidos/alerta.wav";
 const char* const RUTA_APAGON   = ":/sonidos/apagon.wav";
+const char* const RUTA_MUSICA_MENU = ":/sonidos/musica_menu.wav";
+const char* const RUTA_MENU_MOVER  = ":/sonidos/menu_mover.wav";
+const char* const RUTA_MENU_ELEGIR = ":/sonidos/menu_elegir.wav";
+const char* const RUTA_MENU_ATRAS  = ":/sonidos/menu_atras.wav";
 
 // Volumen de la música del laberinto con luz y durante el apagón
 // (en el apagón baja para que se sienta el silencio).
-const float VOLUMEN_LABERINTO = 0.35f;
-const float VOLUMEN_LABERINTO_APAGON = 0.12f;
+const float VOLUMEN_LABERINTO = 0.55f;
+const float VOLUMEN_LABERINTO_APAGON = 0.2f;
 
 // true si al menos un Minion está persiguiendo a Mario.
 bool algunoPersigue(const NivelLaberinto& nivel)
@@ -82,7 +86,17 @@ void GestorSonido::cargar()
     prepararEfecto(alerta_,  RUTA_ALERTA,  0.8f);
     prepararEfecto(apagon_,  RUTA_APAGON,  0.9f);
     musicaLaberinto_.setLoopCount(QSoundEffect::Infinite);
+
+    prepararEfecto(musicaMenu_, RUTA_MUSICA_MENU, 0.4f);
+    prepararEfecto(menuMover_,  RUTA_MENU_MOVER,  0.5f);
+    prepararEfecto(menuElegir_, RUTA_MENU_ELEGIR, 0.7f);
+    prepararEfecto(menuAtras_,  RUTA_MENU_ATRAS,  0.6f);
+    musicaMenu_.setLoopCount(QSoundEffect::Infinite);
 }
+
+void GestorSonido::sonarMover()  { menuMover_.play(); }
+void GestorSonido::sonarElegir() { menuElegir_.play(); }
+void GestorSonido::sonarAtras()  { menuAtras_.play(); }
 
 // Cuando empieza un nivel (o se reinicia), lo anterior ya no sirve.
 void GestorSonido::reiniciarSeguimiento(const Nivel* nivel)
@@ -159,6 +173,13 @@ void GestorSonido::actualizar(const gestorlogico& juego)
         musica_.play();
     else if (!conMusica && musica_.isPlaying())
         musica_.stop();
+
+    // --- Música del menú (solo mientras se está en el menú) ---
+    const bool enMenu = estado == EstadoJuego::MENU;
+    if (enMenu && !musicaMenu_.isPlaying())
+        musicaMenu_.play();
+    else if (!enMenu && musicaMenu_.isPlaying())
+        musicaMenu_.stop();
 
     // --- Música del nivel 2 ---
     const bool conMusicaLaberinto = laberinto != nullptr && estado == EstadoJuego::JUGANDO;

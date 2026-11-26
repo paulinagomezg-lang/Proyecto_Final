@@ -9,5 +9,45 @@
         <file>sonidos/musica_nivel1.wav</file>
         <file>sonidos/salto.wav</file>
         <file>sonidos/victoria.wav</file>
+        <file>sonidos/menu_atras.wav</file>
+        <file>sonidos/menu_elegir.wav</file>
+        <file>sonidos/menu_mover.wav</file>
+        <file>sonidos/musica_menu.wav</file>
+        <file>sprites/caja.png</file>
+        <file>sprites/fondo_refineria.png</file>
+        <file>sprites/pared_0.png</file>
+        <file>sprites/pared_1.png</file>
+        <file>sprites/pared_2.png</file>
+        <file>sprites/piso_0.png</file>
+        <file>sprites/piso_1.png</file>
+        <file>sprites/piso_2.png</file>
+        <file>sprites/piso_3.png</file>
+        <file>sprites/protagonista_abajo_0.png</file>
+        <file>sprites/protagonista_abajo_1.png</file>
+        <file>sprites/protagonista_abajo_2.png</file>
+        <file>sprites/protagonista_arriba_0.png</file>
+        <file>sprites/protagonista_arriba_1.png</file>
+        <file>sprites/protagonista_arriba_2.png</file>
+        <file>sprites/protagonista_capturado.png</file>
+        <file>sprites/protagonista_derecha_0.png</file>
+        <file>sprites/protagonista_derecha_1.png</file>
+        <file>sprites/protagonista_derecha_2.png</file>
+        <file>sprites/protagonista_dormido.png</file>
+        <file>sprites/protagonista_izquierda_0.png</file>
+        <file>sprites/protagonista_izquierda_1.png</file>
+        <file>sprites/protagonista_izquierda_2.png</file>
+        <file>sprites/salida.png</file>
+        <file>sprites/enemigo_derecha_0.png</file>
+        <file>sprites/enemigo_derecha_1.png</file>
+        <file>sprites/enemigo_derecha_2.png</file>
+        <file>sprites/enemigo_izquierda_0.png</file>
+        <file>sprites/enemigo_izquierda_1.png</file>
+        <file>sprites/enemigo_izquierda_2.png</file>
+        <file>sprites/enemigo_abajo_0.png</file>
+        <file>sprites/enemigo_abajo_1.png</file>
+        <file>sprites/enemigo_abajo_2.png</file>
+        <file>sprites/enemigo_arriba_0.png</file>
+        <file>sprites/enemigo_arriba_1.png</file>
+        <file>sprites/enemigo_arriba_2.png</file>
     </qresource>
 </RCC>
